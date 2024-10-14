@@ -10,27 +10,29 @@
       </a>
     </header>
 
-    <div class="p-5 mb-4 bg-light rounded-3">
-      <div class="container-fluid py-5">
+<div class="p-5 mb-4 bg-light rounded-3 position-relative" style="background-image: url('https://images.squarespace-cdn.com/content/v1/60054c9b4616fd2204d7e4b3/1657189908708-YTLXTOIXE4U4VCXP8WZP/GettyImages-950614324.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+    <div class="overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); border-radius: 0.3rem;"></div>
+    <div class="container-fluid py-5 position-relative text-white">
         <h1 class="display-5 fw-bold">School Management System</h1>
         <p class="col-md-8 fs-4">Using Edusync manage your schools with ease.</p>
-        <button class="btn btn-primary btn-lg" type="button">Example button</button>
-      </div>
     </div>
+</div>
+
+
 
     <div class="row align-items-md-stretch">
       <div class="col-md-6">
         <div class="h-100 p-5 text-white bg-dark rounded-3">
           <h2>Manage Students</h2>
           <p>Register new students, Manage their grades, attendace and view timetables.</p>
-          <button class="btn btn-outline-light" type="button">Example button</button>
+          <a asp-controller="Students" asp-action="Index" class="btn btn-outline-light">Students</a>
         </div>
       </div>
       <div class="col-md-6">
         <div class="h-100 p-5 bg-light border rounded-3">
-          <h2>Manage teachers</h2>
+          <h2>Manage Teachers</h2>
           <p>Register new teachers, manage their subjects and view timetables.</p>
-          <button class="btn btn-outline-secondary" type="button">Example button</button>
+          <a asp-controller="Teachers" asp-action="Index" class="btn btn-outline-secondary">Teachers</a>
         </div>
       </div>
     </div>
