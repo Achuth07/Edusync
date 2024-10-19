@@ -1,0 +1,38 @@
+@model IEnumerable<Edusync.Data.Grade>
+
+@{
+    ViewData["Title"] = "Grades";
+}
+
+<h1>Grades</h1>
+<p>
+    <a asp-action="Create" class="btn btn-success">Add New Grade</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Student</th>
+            <th>Class</th>
+            <th>Assessment Type</th>
+            <th>Score</th>
+            <th>Date Recorded</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Student.FirstName @item.Student.LastName</td>
+                <td>@item.Class.Course.Name</td>
+                <td>@item.AssessmentType</td>
+                <td>@item.Score</td>
+                <td>@item.DateRecorded.ToShortDateString()</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning">Edit</a>
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
