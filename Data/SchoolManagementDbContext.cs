@@ -23,6 +23,8 @@ public partial class SchoolManagementDbContext : DbContext
 
     public virtual DbSet<Grade> Grades { get; set; }
 
+    public virtual DbSet<Attendance> Attendances { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Class>(entity =>
@@ -78,6 +80,20 @@ public partial class SchoolManagementDbContext : DbContext
             entity.Property(e => e.FirstName).HasMaxLength(50);
             entity.Property(e => e.LastName).HasMaxLength(50);
         });
+
+        modelBuilder.Entity<Attendance>(entity =>
+    {
+        entity.HasKey(e => e.Id);
+        entity.HasOne(a => a.Student)
+            .WithMany(s => s.Attendances)
+            .HasForeignKey(a => a.StudentId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        entity.HasOne(a => a.Class)
+            .WithMany(c => c.Attendances)
+            .HasForeignKey(a => a.ClassId)
+            .OnDelete(DeleteBehavior.Cascade);
+    });
 
         OnModelCreatingPartial(modelBuilder);
     }

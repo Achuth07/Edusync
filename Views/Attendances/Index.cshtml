@@ -1,0 +1,88 @@
+@model IEnumerable<Edusync.Data.Attendance>
+
+@{
+    ViewData["Title"] = "Attendance List";
+}
+
+<h1>Attendance List</h1>
+
+<p>
+    <a class="btn btn-success" asp-action="Create">Record New Attendance</a>
+</p>
+
+<table class="table" id="attendancesTable">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Student.FirstName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Class.Course.Name)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Date)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Status) <!-- Status column -->
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model) {
+        <tr>
+            <td>
+                @item.Student.FirstName @item.Student.LastName
+            </td>
+            <td>
+                @item.Class.Course.Name
+            </td>
+            <td>
+                @item.Date.ToShortDateString()
+            </td>
+            <td>
+                @item.Status <!-- Display Status -->
+            </td>
+            <td>
+                <a class="btn btn-warning" asp-action="Edit" asp-route-id="@item.Id">Edit</a>
+                <button data-id="@item.Id" class="btn btn-danger deleteBtn" type="button">Delete</button>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+<form asp-action="Delete" id="studentDeleteForm">
+        <input type="hidden" id="studentid" name="Id" />
+    </form>
+
+@section Scripts{
+    <script>
+        $(function(){
+            $('#attendancesTable').DataTable();
+
+            $('.deleteBtn').click(function(e){
+                Swal.fire({
+                    title: "Are you sure?",
+                    text: "You won't be able to revert this!",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonColor: "#3085d6",
+                    cancelButtonColor: "#d33",
+                    confirmButtonText: "Yes, delete it!"
+                    }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                        title: "Deleted!",
+                        text: "Your file has been deleted.",
+                        icon: "success"
+                        });
+                        var btn = $(this);
+                        var id = btn.data("id");
+                        $('#studentid').val(id);
+                        $('#studentDeleteForm').submit();
+                    }
+                    });
+            })
+        })
+    </script>
+}
