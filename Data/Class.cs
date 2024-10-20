@@ -13,6 +13,8 @@ public partial class Class
 
     public TimeOnly? Time { get; set; }
 
+    public string Day { get; set; } = "Monday";
+
     public virtual Course? Course { get; set; }
 
     public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
