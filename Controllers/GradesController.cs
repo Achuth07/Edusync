@@ -61,7 +61,7 @@ namespace Edusync.Controllers
         // POST: Grades/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,StudentId,ClassId,AssessmentType,Score")] Grade grade)
+        public async Task<IActionResult> Create([Bind("Id,StudentId,ClassId,AssessmentType,Score,AcademicYear")] Grade grade)
         {
             if (ModelState.IsValid)
             {
@@ -111,7 +111,7 @@ namespace Edusync.Controllers
         // POST: Grades/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,StudentId,ClassId,AssessmentType,Score")] Grade grade)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,StudentId,ClassId,AssessmentType,Score,AcademicYear")] Grade grade)
         {
             if (id != grade.Id)
             {

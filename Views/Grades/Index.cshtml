@@ -14,6 +14,9 @@
             <th>Student</th>
             <th>Class</th>
             <th>Assessment Type</th>
+            <th>
+                @Html.DisplayNameFor(model => model.AcademicYear)
+            </th>
             <th>Score</th>
             <th>Date Recorded</th>
             <th>Actions</th>
@@ -26,6 +29,9 @@
                 <td>@item.Student.FirstName @item.Student.LastName</td>
                 <td>@item.Class.Course.Name</td>
                 <td>@item.AssessmentType</td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.AcademicYear)
+                </td>
                 <td>@item.Score</td>
                 <td>@item.DateRecorded.ToShortDateString()</td>
                 <td>

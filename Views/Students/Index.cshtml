@@ -21,7 +21,8 @@
             <th>
                 @Html.DisplayNameFor(model => model.DateOfBirth)
             </th>
-            <th></th>
+            <th>Actions</th>
+            <th>Academic Progress</th>
         </tr>
     </thead>
     <tbody>
@@ -44,6 +45,10 @@
                 <a class="btn btn-primary" asp-action="Details" asp-route-id="@item.Id">Details</a> 
                 <button data-id="@item.Id" class="btn btn-danger deleteBtn" type="button">Delete</button>
             </td>
+            <td>
+                <a asp-action="AcademicProgress" asp-route-studentId="@item.Id" class="btn btn-info">View Progress</a>
+            </td>
+
         </tr>
 }
     </tbody>

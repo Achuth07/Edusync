@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Edusync.Data;
+using Edusync.Models;
 
 namespace Edusync.Controllers
 {
@@ -146,6 +147,38 @@ namespace Edusync.Controllers
 
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
+        }
+
+        public async Task<IActionResult> AcademicProgress(int studentId)
+        {
+            var student = await _context.Students.FindAsync(studentId);
+            if (student == null)
+            {
+                return NotFound();
+            }
+
+            var grades = await _context.Grades
+                .Include(g => g.Student)
+                .Include(g => g.Class)
+                .ThenInclude(c => c.Course)
+                .Where(g => g.StudentId == studentId)
+                .ToListAsync();
+
+            var model = new AcademicProgressViewModel
+            {
+                StudentId = studentId,
+                StudentName = $"{student.FirstName} {student.LastName}",
+                CourseGrades = grades.Select(g => new CourseGradeViewModel
+                {
+                    CourseName = g.Class.Course.Name,
+                    AssessmentType = g.AssessmentType,
+                    Score = g.Score,
+                    DateRecorded = g.DateRecorded
+                }).ToList()
+            };
+
+
+            return View(model);
         }
 
         private bool StudentExists(int id)

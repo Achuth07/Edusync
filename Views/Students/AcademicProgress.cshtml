@@ -1,0 +1,83 @@
+@model Edusync.Models.AcademicProgressViewModel
+
+@{
+    ViewData["Title"] = "Academic Progress";
+}
+
+<h1>Academic Progress for @Model.StudentName</h1>
+
+<table class="table table-bordered" id="academicProgressTable">
+    <thead>
+        <tr>
+            <th>Course</th>
+            <th>Assessment Type</th>
+            <th>Academic Year</th>
+            <th>Score</th>
+            <th>Date Recorded</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var grade in Model.CourseGrades)
+    {
+        <tr>
+            <td>@grade.CourseName</td>
+            <td>@grade.AssessmentType</td>
+            <td>@grade.AcademicYear</td>
+            <td>@grade.Score</td>
+            <td>@grade.DateRecorded.ToShortDateString()</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<div class="container">
+    <h3>Academic Progress Bar Chart</h3>
+    <canvas id="progressChart" width="400" height="200"></canvas>
+</div>
+
+@section Scripts {
+    <script>
+        $('#academicProgressTable').DataTable();
+        $(document).ready(function () {
+            var ctx = document.getElementById('progressChart').getContext('2d');
+
+            // Collect data for the chart
+            var courseNames = [];
+            var scores = [];
+
+            @* Populate the chart data from the Model *@
+            @foreach (var courseGrade in Model.CourseGrades)
+            {
+                <text>
+                    courseNames.push("@courseGrade.CourseName - @courseGrade.AssessmentType");
+                    scores.push(@courseGrade.Score);
+                </text>
+            }
+
+            // Create the bar chart
+            var progressChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: courseNames,
+                    datasets: [{
+                        label: 'Scores',
+                        data: scores,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100 // Assuming scores are out of 100
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}
+
+<a asp-action="Index" class="btn btn-secondary">Back to Students List</a>
