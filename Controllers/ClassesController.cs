@@ -223,6 +223,13 @@ namespace Edusync.Controllers
             new { classId = classId});
         }
 
+        public async Task<IActionResult> ViewOnly()
+        {
+            var schoolManagementDbContext = _context.Classes.Include(q => q.Course).Include(q => q.Teachers);
+            return View(await schoolManagementDbContext.ToListAsync());
+        }
+
+
 
         private bool ClassExists(int id)
         {

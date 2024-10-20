@@ -1,0 +1,52 @@
+@model IEnumerable<Edusync.Data.Class>
+
+@{
+    ViewData["Title"] = "View Only Timetable";
+}
+
+<h1>Class Timetable</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                Day
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Time)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Course)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Teachers)
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @item.Day
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Time)
+            </td>
+            <td>
+                @item.Course.Code - @item.Course.Name
+            </td>
+            <td>
+                @item.Teachers.FirstName @item.Teachers.LastName
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+
+@section Scripts {
+    <script>
+        $(function(){
+            $('.table').DataTable();
+        })
+    </script>
+}
