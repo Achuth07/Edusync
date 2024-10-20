@@ -1,0 +1,40 @@
+@model IEnumerable<Edusync.Data.Grade>
+
+@{
+    ViewData["Title"] = "View Only Grades";
+}
+
+<h1>View Grades</h1>
+<h3>Filter your grades using search or sort functionalities</h3>
+
+<table class="table table-bordered" id="viewOnlygradesTable">
+    <thead>
+        <tr>
+            <th>Student</th>
+            <th>Class</th>
+            <th>Assessment Type</th>
+            <th>Score</th>
+            <th>Date Recorded</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>@(item.Student != null ? $"{item.Student.FirstName} {item.Student.LastName}" : "No Student")</td>
+            <td>@(item.Class != null && item.Class.Course != null ? $"{item.Class.Course.Code} - {item.Class.Course.Name}" : "No Class")</td>
+            <td>@item.AssessmentType</td>
+            <td>@item.Score</td>
+            <td>@item.DateRecorded.ToShortDateString()</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@section Scripts{
+    <script>
+        $(function(){
+            $('#viewOnlygradesTable').DataTable();
+        })
+    </script>
+}

@@ -139,6 +139,18 @@ namespace Edusync.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        //ViewAttendance
+        public async Task<IActionResult> ViewOnly()
+        {
+            var attendances = await _context.Attendances
+                .Include(a => a.Student)  // To get student details
+                .Include(a => a.Class)    // To get class details
+                .ThenInclude(c => c.Course)  // To get course details (if needed)
+                .ToListAsync();
+
+            return View(attendances);
+        }
+
         private bool AttendanceExists(int id)
         {
             return _context.Attendances.Any(e => e.Id == id);

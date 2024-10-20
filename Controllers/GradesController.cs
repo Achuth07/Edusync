@@ -183,8 +183,17 @@ namespace Edusync.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        //View Only Grades Page
+        public async Task<IActionResult> ViewOnly()
+        {
+            var grades = await _context.Grades
+                .Include(g => g.Student)   // To load student details
+                .Include(g => g.Class)     // To load class details
+                .ThenInclude(c => c.Course)  // To load course details (if needed)
+                .ToListAsync();
 
-
+            return View(grades);
+        }
 
         private bool GradeExists(int id)
         {
