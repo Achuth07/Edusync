@@ -181,6 +181,13 @@ namespace Edusync.Controllers
             return View(model);
         }
 
+        public async Task<IActionResult> ViewOnly()
+        {
+            var students = await _context.Students.ToListAsync();
+            return View(students);
+        }
+
+
         private bool StudentExists(int id)
         {
             return _context.Students.Any(e => e.Id == id);

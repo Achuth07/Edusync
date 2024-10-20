@@ -1,0 +1,58 @@
+@model IEnumerable<Edusync.Data.Student>
+
+@{
+    ViewData["Title"] = "View Students";
+}
+
+<h1>View Academic Progress</h1>
+
+<table class="table" id="studentsTable">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.FirstName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.LastName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.DateOfBirth)
+            </th>
+            <th>Academic Progress</th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.FirstName)
+            </td>
+            <br>
+            <td>
+                @Html.DisplayFor(modelItem => item.LastName)
+            </td>
+            <br>
+            <td>
+                @Html.DisplayFor(modelItem => item.DateOfBirth)
+            </td>
+            <br>
+            <td>
+                <a asp-action="AcademicProgress" asp-route-studentId="@item.Id" class="btn btn-info">View Progress</a>
+            </td>
+
+        </tr>
+}
+    </tbody>
+</table>
+
+<form asp-action="Delete" id="studentDeleteForm">
+        <input type="hidden" id="studentid" name="Id" />
+    </form>
+
+@section Scripts{
+    <script>
+        $(function(){
+            $('#studentsTable').DataTable();
+        })
+    </script>
+}
