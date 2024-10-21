@@ -148,7 +148,7 @@ namespace Edusync.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private bool CourseExists(int id)
+        public bool CourseExists(int id)
         {
             return _context.Courses.Any(e => e.Id == id);
         }
