@@ -6,16 +6,19 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Edusync.Data;
+using AspNetCoreHero.ToastNotification.Abstractions;
 
 namespace Edusync.Controllers
 {
     public class TeachersController : Controller
     {
         private readonly SchoolManagementDbContext _context;
+        private readonly INotyfService _notyfService;
 
-        public TeachersController(SchoolManagementDbContext context)
+        public TeachersController(SchoolManagementDbContext context, INotyfService notyfService)
         {
             _context = context;
+            _notyfService = notyfService;
         }
 
         // GET: Teachers
@@ -139,14 +142,36 @@ namespace Edusync.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var teacher = await _context.Teachers.FindAsync(id);
-            if (teacher != null)
+            if (teacher == null)
             {
-                _context.Teachers.Remove(teacher);
+                return NotFound();
             }
 
-            await _context.SaveChangesAsync();
+            try
+            {
+                // Attempt to remove the teacher
+                _context.Teachers.Remove(teacher);
+                await _context.SaveChangesAsync();
+                _notyfService.Success("Teacher deleted successfully.");
+            }
+            catch (DbUpdateException ex)
+            {
+                // Check if it's a foreign key constraint violation
+                if (ex.InnerException != null && ex.InnerException.Message.Contains("The DELETE statement conflicted with the REFERENCE constraint"))
+                {
+                    // Show a user-friendly error message
+                    _notyfService.Error("Please remove teacher from any assigned classes in the timetable before deleting teacher records.");
+                }
+                else
+                {
+                    // Log the exception if needed, and throw for unhandled exceptions
+                    throw;
+                }
+            }
+
             return RedirectToAction(nameof(Index));
         }
+
 
         private bool TeacherExists(int id)
         {
