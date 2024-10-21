@@ -141,36 +141,39 @@ namespace Edusync.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var teacher = await _context.Teachers.FindAsync(id);
-            if (teacher == null)
-            {
-                return NotFound();
-            }
-
             try
             {
-                // Attempt to remove the teacher
+                var teacher = await _context.Teachers.FindAsync(id);
+                if (teacher == null)
+                {
+                    return NotFound();
+                }
+
                 _context.Teachers.Remove(teacher);
                 await _context.SaveChangesAsync();
-                _notyfService.Success("Teacher deleted successfully.");
+
+                // Returning success response for AJAX
+                return Json(new { success = true });
             }
             catch (DbUpdateException ex)
             {
-                // Check if it's a foreign key constraint violation
+                // Checking for foreign key constraint error
                 if (ex.InnerException != null && ex.InnerException.Message.Contains("The DELETE statement conflicted with the REFERENCE constraint"))
                 {
-                    // Show a user-friendly error message
-                    _notyfService.Error("Please remove teacher from any assigned classes in the timetable before deleting teacher records.");
+                    // Trigger Notyf error on the server-side
+                    _notyfService.Error("Teacher has been assigned Classes in the timetable. Please remove teacher from the timetable before deleting teacher records.");
+
+                    // Return error response to AJAX
+                    return Json(new { success = false, message = "Teacher has been assigned Classes in the timetable. Please remove teacher from the timetable before deleting teacher records." });
                 }
                 else
                 {
-                    // Log the exception if needed, and throw for unhandled exceptions
-                    throw;
+                    // Return a generic error message
+                    return Json(new { success = false, message = "An error occurred while deleting the teacher." });
                 }
             }
-
-            return RedirectToAction(nameof(Index));
         }
+
 
 
         private bool TeacherExists(int id)
