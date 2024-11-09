@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Edusync.Data;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Edusync.Controllers
 {
@@ -18,6 +19,7 @@ namespace Edusync.Controllers
         }
 
         // GET: Attendances
+        [Authorize]
         public async Task<IActionResult> Index()
         {
             var attendances = _context.Attendances
@@ -28,6 +30,7 @@ namespace Edusync.Controllers
         }
 
         // GET: Attendances/Create
+        [Authorize(Roles = "Teacher")]
         public IActionResult Create()
         {
             ViewData["StudentId"] = new SelectList(_context.Students, "Id", "FirstName");
@@ -52,6 +55,7 @@ namespace Edusync.Controllers
         }
 
         // GET: Attendances/Edit/5
+        [Authorize(Roles = "Teacher")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -105,6 +109,7 @@ namespace Edusync.Controllers
         }
 
         // GET: Attendances/Delete/5
+        [Authorize(Roles = "Admin, Teacher")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -140,6 +145,7 @@ namespace Edusync.Controllers
         }
 
         //ViewAttendance
+        [Authorize(Roles = "Student")]
         public async Task<IActionResult> ViewOnly()
         {
             var attendances = await _context.Attendances

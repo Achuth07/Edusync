@@ -28,6 +28,84 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="About">About</a>
                         </li>
                     </ul>
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <ul class="navbar-nav me-auto">
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Courses" asp-action="Index">Manage Courses</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Students" asp-action="Index">Manage Students</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Teachers" asp-action="Index">Manage Teachers</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Classes" asp-action="Index">Manage Timetable</a>
+                                </li>
+                            }
+                            else if (User.IsInRole("Teacher"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Grades" asp-action="Index">Manage Grades</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Classes" asp-action="ViewOnly">View Timetable</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Attendances" asp-action="Index">Manage Attendances</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Students" asp-action="ViewOnly">View Academic Progress</a>
+                                </li>
+                            }
+                            else if (User.IsInRole("Student"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Grades" asp-action="ViewOnly">View Grades</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Attendances" asp-action="ViewOnly">View Attendance</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Classes" asp-action="ViewOnly">View Timetable</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Students" asp-action="ViewOnly">View Academic Progress</a>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    <div class="navbar-collapse collapse d-flex justify-content-end">
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <ul class="navbar-nav align-items-center">
+                            <li class="nav-item">
+                                <span class="nav-link text-dark">
+                                    Hello, @User.Identity.Name!
+                                </span>
+                            </li>
+                            <li class="nav-item">
+                                <form asp-action="Logout" asp-controller="Account" method="post" class="form-inline">
+                                    <button type="submit" class="btn btn-link nav-link text-dark">Logout</button>
+                                </form>
+                            </li>
+                        </ul>
+                    }
+                    else
+                    {
+                        <ul class="navbar-nav">
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">Login</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Account" asp-action="Register">Register</a>
+                            </li>
+                        </ul>
+                    }
+                </div>
                 </div>
             </div>
         </nav>
@@ -51,6 +129,10 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    @section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.1/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.11/jquery.validate.unobtrusive.min.js"></script>
+    }
     @await RenderSectionAsync("Scripts", required: false)
     @await Component.InvokeAsync("Notyf")
 </body>

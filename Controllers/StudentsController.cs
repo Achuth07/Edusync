@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Edusync.Data;
 using Edusync.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Edusync.Controllers
 {
@@ -20,12 +21,14 @@ namespace Edusync.Controllers
         }
 
         // GET: Students
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Index()
         {
             return View(await _context.Students.ToListAsync());
         }
 
         // GET: Students/Details/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -44,6 +47,7 @@ namespace Edusync.Controllers
         }
 
         // GET: Students/Create
+        [Authorize(Roles = "Admin")]
         public IActionResult Create()
         {
             return View();
@@ -66,6 +70,7 @@ namespace Edusync.Controllers
         }
 
         // GET: Students/Edit/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -117,6 +122,7 @@ namespace Edusync.Controllers
         }
 
         // GET: Students/Delete/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -181,6 +187,7 @@ namespace Edusync.Controllers
             return View(model);
         }
 
+        [Authorize(Roles = "Student, Teacher")]
         public async Task<IActionResult> ViewOnly()
         {
             var students = await _context.Students.ToListAsync();

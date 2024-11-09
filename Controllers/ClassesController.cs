@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Edusync.Data;
 using Edusync.Models;
 using AspNetCoreHero.ToastNotification.Abstractions;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Edusync.Controllers
 {
@@ -23,6 +24,7 @@ namespace Edusync.Controllers
         }
 
         // GET: Classes
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Index()
         {
             var schoolManagementDbContext = _context.Classes.Include(q => q.Course).Include(q => q.Teachers);
@@ -30,6 +32,7 @@ namespace Edusync.Controllers
         }
 
         // GET: Classes/Details/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -50,6 +53,8 @@ namespace Edusync.Controllers
         }
 
         // GET: Classes/Create
+        [Authorize(Roles = "Admin, Teacher")]
+
         public IActionResult Create()
         {
             CreateSelectLists();
@@ -74,6 +79,7 @@ namespace Edusync.Controllers
         }
 
         // GET: Classes/Edit/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -127,6 +133,7 @@ namespace Edusync.Controllers
         }
 
         // GET: Classes/Delete/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -161,6 +168,7 @@ namespace Edusync.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult> ManageEnrollments(int classId)
         {
             var @class = await _context.Classes
@@ -198,6 +206,7 @@ namespace Edusync.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult> EnrollStudent(int classId, int studentId, bool shouldEnroll)
         {
             var enrollment = new Enrollment();
@@ -223,6 +232,7 @@ namespace Edusync.Controllers
             new { classId = classId});
         }
 
+        [Authorize(Roles = "Admin, Teacher, Student")]
         public async Task<IActionResult> ViewOnly()
         {
             var schoolManagementDbContext = _context.Classes.Include(q => q.Course).Include(q => q.Teachers);

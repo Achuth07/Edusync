@@ -1,4 +1,5 @@
 using Edusync.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,7 @@ namespace Edusync.Controllers
         }
 
         // GET: Grades/Index
+        [Authorize]
         public async Task<IActionResult> Index()
         {
             // Include the related Student and Class data
@@ -29,6 +31,7 @@ namespace Edusync.Controllers
 
 
         // GET: Grades/Create
+        [Authorize(Roles = "Teacher")]
         public IActionResult Create()
         {
             var students = _context.Students.Select(s => new 
@@ -75,6 +78,7 @@ namespace Edusync.Controllers
         }
 
         // GET: Grades/Edit/5
+        [Authorize(Roles = "Teacher")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -146,6 +150,7 @@ namespace Edusync.Controllers
         }
 
         // GET: Grades/Delete/5
+        [Authorize(Roles = "Teacher")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null || _context.Grades == null)
@@ -184,6 +189,8 @@ namespace Edusync.Controllers
         }
 
         //View Only Grades Page
+        //[AllowAnonymous]
+        [Authorize(Roles = "Student")]
         public async Task<IActionResult> ViewOnly()
         {
             var grades = await _context.Grades

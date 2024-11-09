@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Edusync.Data;
 using AspNetCoreHero.ToastNotification.Abstractions;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Edusync.Controllers
 {
+    [Authorize(Roles = "Admin")]
     public class TeachersController : Controller
     {
         private readonly SchoolManagementDbContext _context;
