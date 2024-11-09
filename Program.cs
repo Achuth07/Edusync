@@ -5,8 +5,19 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using AspNetCoreHero.ToastNotification;
 using AspNetCoreHero.ToastNotification.Extensions;
+using Microsoft.Extensions.Logging;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog for logging to both console and file
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.File("Logs/Edusync-log-.txt", rollingInterval: RollingInterval.Day) // Logs will be created daily
+    .CreateLogger();
+
+// Replace the default logging with Serilog
+builder.Host.UseSerilog();
 
 // Add services to the container.
 var conn = builder.Configuration.GetConnectionString("SchoolManagementDbConnection");
