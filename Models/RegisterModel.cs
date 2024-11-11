@@ -4,20 +4,25 @@ namespace Edusync.Models
 {
     public class RegisterModel
     {
-        [Required]
+        [Required(ErrorMessage = "Username is required.")]
+        [StringLength(50, ErrorMessage = "Username cannot exceed 50 characters.")]
+        [RegularExpression(@"^[a-zA-Z0-9]+$", ErrorMessage = "Username can only contain letters and numbers.")]
         [Display(Name = "Username")]
-        public string Username { get; set; }
+        public string Username { get; set; } = string.Empty;
 
-        [Required]
-        [EmailAddress]
-        public string Email { get; set; }
+        [Required(ErrorMessage = "Email address is required.")]
+        [EmailAddress(ErrorMessage = "Invalid email address.")]
+        [StringLength(100, ErrorMessage = "Email cannot exceed 100 characters.")]
+        public string Email { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "Password is required.")]
         [DataType(DataType.Password)]
-        public string Password { get; set; }
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters long.")]
+        public string Password { get; set; } = string.Empty;
 
-        [Required]
+        [Required(ErrorMessage = "Role selection is required.")]
         [Display(Name = "Role")]
-        public string Role { get; set; } // e.g., "Admin", "Teacher", "Student"
+        [RegularExpression(@"^(Admin|Teacher|Student)$", ErrorMessage = "Invalid role selected.")]
+        public string Role { get; set; } = string.Empty; // e.g., "Admin", "Teacher", "Student"
     }
 }
