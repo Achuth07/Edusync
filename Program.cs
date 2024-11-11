@@ -86,6 +86,18 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+// Add the Content Security Policy (CSP) header
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; " +
+                                                          "img-src 'self' data: https://img.freepik.com https://images.squarespace-cdn.com; " +
+                                                          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://cdn.datatables.net; " +
+                                                          "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.datatables.net https://stackpath.bootstrapcdn.com; " +
+                                                          "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com https://stackpath.bootstrapcdn.com; " +
+                                                          "connect-src 'self';";
+    await next();
+});
+
 // Add authentication and authorization middleware
 app.UseAuthentication();
 app.UseAuthorization();

@@ -7,23 +7,23 @@ namespace Edusync.Data
     {
         public int Id { get; set; }
 
-        [Required]
-        [Display(Name ="Student Name")]
+        [Required(ErrorMessage = "Student is required.")]
+        [Display(Name = "Student Name")]
         public int StudentId { get; set; }
 
-        [Required]
-        [Display(Name ="Course")]
+        [Required(ErrorMessage = "Course is required.")]
+        [Display(Name = "Course")]
         public int ClassId { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Date is required.")]
         [DataType(DataType.Date)]
+        [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
         public DateTime Date { get; set; }
 
-        [Required]
-        [StringLength(20)]
+        [Required(ErrorMessage = "Status is required.")]
+        [StringLength(20, ErrorMessage = "Status cannot be longer than 20 characters.")]
+        [RegularExpression("^(Present|Absent|Late|Excused)$", ErrorMessage = "Status must be 'Present', 'Absent', 'Late', or 'Excused'.")]
         public string Status { get; set; } = "Absent"; // Defaults to Absent
-
-        //public bool IsPresent { get; set; }
 
         public virtual Student? Student { get; set; }
         public virtual Class? Class { get; set; }
