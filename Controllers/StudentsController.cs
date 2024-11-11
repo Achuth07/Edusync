@@ -8,22 +8,26 @@ using Microsoft.EntityFrameworkCore;
 using Edusync.Data;
 using Edusync.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
 
 namespace Edusync.Controllers
 {
     public class StudentsController : Controller
     {
         private readonly SchoolManagementDbContext _context;
+        private readonly ILogger<StudentsController> _logger;
 
-        public StudentsController(SchoolManagementDbContext context)
+        public StudentsController(SchoolManagementDbContext context, ILogger<StudentsController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: Students
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Index()
         {
+            _logger.LogInformation("Admin accessed the Students list.");
             return View(await _context.Students.ToListAsync());
         }
 
@@ -33,6 +37,7 @@ namespace Edusync.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Attempted to access Student details with a null ID.");
                 return NotFound();
             }
 
@@ -40,9 +45,11 @@ namespace Edusync.Controllers
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (student == null)
             {
+                _logger.LogWarning("Student with ID {Id} not found.", id);
                 return NotFound();
             }
 
+            _logger.LogInformation("Admin accessed details for Student ID {Id}.", id);
             return View(student);
         }
 
@@ -50,12 +57,11 @@ namespace Edusync.Controllers
         [Authorize(Roles = "Admin")]
         public IActionResult Create()
         {
+            _logger.LogInformation("Admin navigated to Create Student page.");
             return View();
         }
 
         // POST: Students/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,FirstName,LastName,DateOfBirth")] Student student)
@@ -64,8 +70,10 @@ namespace Edusync.Controllers
             {
                 _context.Add(student);
                 await _context.SaveChangesAsync();
+                _logger.LogInformation("Admin created a new Student with ID {Id}.", student.Id);
                 return RedirectToAction(nameof(Index));
             }
+            _logger.LogWarning("Failed to create Student due to model state errors.");
             return View(student);
         }
 
@@ -75,26 +83,29 @@ namespace Edusync.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Attempted to edit Student with a null ID.");
                 return NotFound();
             }
 
             var student = await _context.Students.FindAsync(id);
             if (student == null)
             {
+                _logger.LogWarning("Student with ID {Id} not found for editing.", id);
                 return NotFound();
             }
+
+            _logger.LogInformation("Admin accessed Edit page for Student ID {Id}.", id);
             return View(student);
         }
 
         // POST: Students/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,FirstName,LastName,DateOfBirth")] Student student)
         {
             if (id != student.Id)
             {
+                _logger.LogWarning("Student ID mismatch for editing. Provided ID: {ProvidedId}, Student ID: {StudentId}.", id, student.Id);
                 return NotFound();
             }
 
@@ -104,20 +115,25 @@ namespace Edusync.Controllers
                 {
                     _context.Update(student);
                     await _context.SaveChangesAsync();
+                    _logger.LogInformation("Admin updated Student with ID {Id}.", student.Id);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
                     if (!StudentExists(student.Id))
                     {
+                        _logger.LogWarning("Student with ID {Id} not found during update attempt.", student.Id);
                         return NotFound();
                     }
                     else
                     {
+                        _logger.LogError("Concurrency error occurred while updating Student with ID {Id}.", student.Id);
                         throw;
                     }
                 }
                 return RedirectToAction(nameof(Index));
             }
+
+            _logger.LogWarning("Failed to update Student with ID {Id} due to model state errors.", student.Id);
             return View(student);
         }
 
@@ -127,6 +143,7 @@ namespace Edusync.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Attempted to delete Student with a null ID.");
                 return NotFound();
             }
 
@@ -134,9 +151,11 @@ namespace Edusync.Controllers
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (student == null)
             {
+                _logger.LogWarning("Student with ID {Id} not found for deletion.", id);
                 return NotFound();
             }
 
+            _logger.LogInformation("Admin accessed Delete page for Student ID {Id}.", id);
             return View(student);
         }
 
@@ -149,9 +168,14 @@ namespace Edusync.Controllers
             if (student != null)
             {
                 _context.Students.Remove(student);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Admin deleted Student with ID {Id}.", id);
+            }
+            else
+            {
+                _logger.LogWarning("Attempted to delete Student with ID {Id}, but student not found.", id);
             }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
@@ -160,6 +184,7 @@ namespace Edusync.Controllers
             var student = await _context.Students.FindAsync(studentId);
             if (student == null)
             {
+                _logger.LogWarning("Student with ID {Id} not found while accessing Academic Progress.", studentId);
                 return NotFound();
             }
 
@@ -169,6 +194,8 @@ namespace Edusync.Controllers
                 .ThenInclude(c => c.Course)
                 .Where(g => g.StudentId == studentId)
                 .ToListAsync();
+
+            _logger.LogInformation("Admin accessed Academic Progress for Student ID {Id}.", studentId);
 
             var model = new AcademicProgressViewModel
             {
@@ -183,17 +210,16 @@ namespace Edusync.Controllers
                 }).ToList()
             };
 
-
             return View(model);
         }
 
         [Authorize(Roles = "Student, Teacher")]
         public async Task<IActionResult> ViewOnly()
         {
+            _logger.LogInformation("User with role Student or Teacher accessed the Students ViewOnly page.");
             var students = await _context.Students.ToListAsync();
             return View(students);
         }
-
 
         private bool StudentExists(int id)
         {

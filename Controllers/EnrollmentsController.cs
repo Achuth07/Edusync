@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Edusync.Data;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
 
 namespace Edusync.Controllers
 {
@@ -14,15 +13,18 @@ namespace Edusync.Controllers
     public class EnrollmentsController : Controller
     {
         private readonly SchoolManagementDbContext _context;
+        private readonly ILogger<EnrollmentsController> _logger;
 
-        public EnrollmentsController(SchoolManagementDbContext context)
+        public EnrollmentsController(SchoolManagementDbContext context, ILogger<EnrollmentsController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: Enrollments
         public async Task<IActionResult> Index()
         {
+            _logger.LogInformation("User {UserId} accessed the enrollment index page.", User?.Identity?.Name);
             var schoolManagementDbContext = _context.Enrollments.Include(e => e.Class).Include(e => e.Students);
             return View(await schoolManagementDbContext.ToListAsync());
         }
@@ -32,6 +34,7 @@ namespace Edusync.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Details action requested without ID by User {UserId}.", User?.Identity?.Name);
                 return NotFound();
             }
 
@@ -41,23 +44,24 @@ namespace Edusync.Controllers
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (enrollment == null)
             {
+                _logger.LogWarning("Enrollment with ID {Id} not found for details view by User {UserId}.", id, User?.Identity?.Name);
                 return NotFound();
             }
 
+            _logger.LogInformation("User {UserId} viewed details of enrollment with ID {Id}.", User?.Identity?.Name, id);
             return View(enrollment);
         }
 
         // GET: Enrollments/Create
         public IActionResult Create()
         {
+            _logger.LogInformation("User {UserId} accessed create enrollment page.", User?.Identity?.Name);
             ViewData["ClassId"] = new SelectList(_context.Classes, "Id", "Id");
             ViewData["StudentsId"] = new SelectList(_context.Students, "Id", "Id");
             return View();
         }
 
         // POST: Enrollments/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,StudentsId,ClassId,Grade")] Enrollment enrollment)
@@ -66,8 +70,11 @@ namespace Edusync.Controllers
             {
                 _context.Add(enrollment);
                 await _context.SaveChangesAsync();
+                _logger.LogInformation("Enrollment created with ID {Id} by User {UserId}.", enrollment.Id, User?.Identity?.Name);
                 return RedirectToAction(nameof(Index));
             }
+
+            _logger.LogWarning("Failed to create enrollment due to invalid model state by User {UserId}.", User?.Identity?.Name);
             ViewData["ClassId"] = new SelectList(_context.Classes, "Id", "Id", enrollment.ClassId);
             ViewData["StudentsId"] = new SelectList(_context.Students, "Id", "Id", enrollment.StudentsId);
             return View(enrollment);
@@ -78,28 +85,31 @@ namespace Edusync.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Edit action requested without ID by User {UserId}.", User?.Identity?.Name);
                 return NotFound();
             }
 
             var enrollment = await _context.Enrollments.FindAsync(id);
             if (enrollment == null)
             {
+                _logger.LogWarning("Enrollment with ID {Id} not found for edit by User {UserId}.", id, User?.Identity?.Name);
                 return NotFound();
             }
+
+            _logger.LogInformation("User {UserId} is editing enrollment with ID {Id}.", User?.Identity?.Name, id);
             ViewData["ClassId"] = new SelectList(_context.Classes, "Id", "Id", enrollment.ClassId);
             ViewData["StudentsId"] = new SelectList(_context.Students, "Id", "Id", enrollment.StudentsId);
             return View(enrollment);
         }
 
         // POST: Enrollments/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,StudentsId,ClassId,Grade")] Enrollment enrollment)
         {
             if (id != enrollment.Id)
             {
+                _logger.LogWarning("Enrollment ID mismatch in edit action by User {UserId}.", User?.Identity?.Name);
                 return NotFound();
             }
 
@@ -109,20 +119,25 @@ namespace Edusync.Controllers
                 {
                     _context.Update(enrollment);
                     await _context.SaveChangesAsync();
+                    _logger.LogInformation("Enrollment with ID {Id} updated by User {UserId}.", id, User?.Identity?.Name);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
                     if (!EnrollmentExists(enrollment.Id))
                     {
+                        _logger.LogError("Concurrency error: Enrollment with ID {Id} no longer exists during update by User {UserId}.", id, User?.Identity?.Name);
                         return NotFound();
                     }
                     else
                     {
+                        _logger.LogCritical("Unexpected error occurred during enrollment update for ID {Id} by User {UserId}.", id, User?.Identity?.Name);
                         throw;
                     }
                 }
                 return RedirectToAction(nameof(Index));
             }
+
+            _logger.LogWarning("Invalid model state for editing enrollment with ID {Id} by User {UserId}.", id, User?.Identity?.Name);
             ViewData["ClassId"] = new SelectList(_context.Classes, "Id", "Id", enrollment.ClassId);
             ViewData["StudentsId"] = new SelectList(_context.Students, "Id", "Id", enrollment.StudentsId);
             return View(enrollment);
@@ -133,6 +148,7 @@ namespace Edusync.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Delete action requested without ID by User {UserId}.", User?.Identity?.Name);
                 return NotFound();
             }
 
@@ -142,9 +158,11 @@ namespace Edusync.Controllers
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (enrollment == null)
             {
+                _logger.LogWarning("Enrollment with ID {Id} not found for deletion by User {UserId}.", id, User?.Identity?.Name);
                 return NotFound();
             }
 
+            _logger.LogInformation("User {UserId} accessed delete confirmation for enrollment with ID {Id}.", User?.Identity?.Name, id);
             return View(enrollment);
         }
 
@@ -157,6 +175,11 @@ namespace Edusync.Controllers
             if (enrollment != null)
             {
                 _context.Enrollments.Remove(enrollment);
+                _logger.LogInformation("Enrollment with ID {Id} deleted by User {UserId}.", id, User?.Identity?.Name);
+            }
+            else
+            {
+                _logger.LogWarning("Attempted to delete nonexistent enrollment with ID {Id} by User {UserId}.", id, User?.Identity?.Name);
             }
 
             await _context.SaveChangesAsync();

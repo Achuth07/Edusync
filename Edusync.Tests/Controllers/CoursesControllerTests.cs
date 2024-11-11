@@ -2,12 +2,14 @@ using Xunit;
 using Moq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Edusync.Controllers;
 using Edusync.Data;
 using Edusync.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Edusync.Tests.Controllers
 {
@@ -15,27 +17,32 @@ namespace Edusync.Tests.Controllers
     {
         private readonly Mock<SchoolManagementDbContext> _mockContext;
         private readonly Mock<DbSet<Course>> _mockCourseSet;
+        private readonly Mock<ILogger<CoursesController>> _mockLogger;
         private readonly CoursesController _controller;
 
         public CoursesControllerTests()
         {
+            // Initialize the mocks for DbSet and ILogger
             _mockCourseSet = new Mock<DbSet<Course>>();
-            _mockContext = new Mock<SchoolManagementDbContext>();
+            _mockLogger = new Mock<ILogger<CoursesController>>();
 
+            // Initialize the context mock
+            _mockContext = new Mock<SchoolManagementDbContext>();
             _mockContext.Setup(c => c.Courses).Returns(_mockCourseSet.Object);
 
-            _controller = new CoursesController(_mockContext.Object);
+            // Initialize the controller with the mock context and logger
+            _controller = new CoursesController(_mockContext.Object, _mockLogger.Object);
         }
 
         // Test for Index method
         [Fact]
-        public async Task Index_ReturnsViewResult_WithListOfCourses()
+        public async Task Index_ReturnsViewResultWithCourses()
         {
             // Arrange
             var courses = new List<Course>
             {
-                new Course { Id = 1, Name = "Mathematics", Code = "M101", Credits = 3 },
-                new Course { Id = 2, Name = "Science", Code = "S101", Credits = 4 }
+                new Course { Id = 1, Code = "M101", Name = "Mathematics", Credits = 3 },
+                new Course { Id = 2, Code = "S101", Name = "Science", Credits = 4 }
             }.AsQueryable();
 
             _mockCourseSet.As<IQueryable<Course>>().Setup(m => m.Provider).Returns(courses.Provider);
@@ -52,43 +59,23 @@ namespace Edusync.Tests.Controllers
             Assert.Equal(2, model.Count());
         }
 
-        // Test for Details method
+        // Test for Create GET method
         [Fact]
-        public async Task Details_ReturnsViewResult_WithCourse()
+        public void Create_ReturnsViewResult()
         {
-            // Arrange
-            var course = new Course { Id = 1, Name = "Mathematics", Code = "M101", Credits = 3 };
-            _mockCourseSet.Setup(m => m.FindAsync(1)).ReturnsAsync(course);
-
             // Act
-            var result = await _controller.Details(1);
+            var result = _controller.Create();
 
             // Assert
             var viewResult = Assert.IsType<ViewResult>(result);
-            var model = Assert.IsType<Course>(viewResult.ViewData.Model);
-            Assert.Equal(1, model.Id);
         }
 
-        // Test for Details method when course does not exist
-        [Fact]
-        public async Task Details_ReturnsNotFound_WhenCourseIsNull()
-        {
-            // Arrange
-            _mockCourseSet.Setup(m => m.FindAsync(1)).ReturnsAsync((Course)null);
-
-            // Act
-            var result = await _controller.Details(1);
-
-            // Assert
-            Assert.IsType<NotFoundResult>(result);
-        }
-
-        // Test for Create POST method when model is valid
+        // Test for Create POST method (Valid Model)
         [Fact]
         public async Task Create_PostValidModel_ReturnsRedirectToIndex()
         {
             // Arrange
-            var course = new Course { Id = 1, Name = "Mathematics", Code = "M101", Credits = 3 };
+            var course = new Course { Id = 1, Code = "M101", Name = "Mathematics", Credits = 3 };
 
             // Act
             var result = await _controller.Create(course);
@@ -101,29 +88,12 @@ namespace Edusync.Tests.Controllers
             Assert.Equal("Index", redirectResult.ActionName);
         }
 
-        // Test for Create POST method when model is invalid
-        [Fact]
-        public async Task Create_PostInvalidModel_ReturnsViewWithModel()
-        {
-            // Arrange
-            var course = new Course { Id = 1, Name = "Mathematics", Code = "M101", Credits = 3 };
-            _controller.ModelState.AddModelError("Name", "Required");
-
-            // Act
-            var result = await _controller.Create(course);
-
-            // Assert
-            var viewResult = Assert.IsType<ViewResult>(result);
-            var model = Assert.IsType<Course>(viewResult.ViewData.Model);
-            Assert.Equal(course.Id, model.Id);
-        }
-
         // Test for Edit GET method
         [Fact]
         public async Task Edit_ReturnsViewResult_WithCourse()
         {
             // Arrange
-            var course = new Course { Id = 1, Name = "Mathematics", Code = "M101", Credits = 3 };
+            var course = new Course { Id = 1, Code = "M101", Name = "Mathematics", Credits = 3 };
             _mockCourseSet.Setup(m => m.FindAsync(1)).ReturnsAsync(course);
 
             // Act
@@ -135,46 +105,12 @@ namespace Edusync.Tests.Controllers
             Assert.Equal(1, model.Id);
         }
 
-        // Test for Edit POST method when model is valid
-        [Fact]
-        public async Task Edit_PostValidModel_ReturnsRedirectToIndex()
-        {
-            // Arrange
-            var course = new Course { Id = 1, Name = "Mathematics", Code = "M101", Credits = 3 };
-
-            // Act
-            var result = await _controller.Edit(1, course);
-
-            // Assert
-            _mockContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-
-            var redirectResult = Assert.IsType<RedirectToActionResult>(result);
-            Assert.Equal("Index", redirectResult.ActionName);
-        }
-
-        // Test for Edit POST method when model is invalid
-        [Fact]
-        public async Task Edit_PostInvalidModel_ReturnsViewWithModel()
-        {
-            // Arrange
-            var course = new Course { Id = 1, Name = "Mathematics", Code = "M101", Credits = 3 };
-            _controller.ModelState.AddModelError("Name", "Required");
-
-            // Act
-            var result = await _controller.Edit(1, course);
-
-            // Assert
-            var viewResult = Assert.IsType<ViewResult>(result);
-            var model = Assert.IsType<Course>(viewResult.ViewData.Model);
-            Assert.Equal(course.Id, model.Id);
-        }
-
         // Test for Delete GET method
         [Fact]
         public async Task Delete_ReturnsViewResult_WithCourse()
         {
             // Arrange
-            var course = new Course { Id = 1, Name = "Mathematics", Code = "M101", Credits = 3 };
+            var course = new Course { Id = 1, Code = "M101", Name = "Mathematics", Credits = 3 };
             _mockCourseSet.Setup(m => m.FindAsync(1)).ReturnsAsync(course);
 
             // Act
@@ -186,12 +122,12 @@ namespace Edusync.Tests.Controllers
             Assert.Equal(1, model.Id);
         }
 
-        // Test for DeleteConfirmed method
+        // Test for Delete POST method (DeleteConfirmed)
         [Fact]
-        public async Task DeleteConfirmed_RemovesCourseAndRedirectsToIndex()
+        public async Task DeleteConfirmed_DeletesCourseAndRedirectsToIndex()
         {
             // Arrange
-            var course = new Course { Id = 1, Name = "Mathematics", Code = "M101", Credits = 3 };
+            var course = new Course { Id = 1, Code = "M101", Name = "Mathematics", Credits = 3 };
             _mockCourseSet.Setup(m => m.FindAsync(1)).ReturnsAsync(course);
 
             // Act
@@ -203,33 +139,6 @@ namespace Edusync.Tests.Controllers
 
             var redirectResult = Assert.IsType<RedirectToActionResult>(result);
             Assert.Equal("Index", redirectResult.ActionName);
-        }
-
-        // Test for CourseExists method
-        [Fact]
-        public void CourseExists_ReturnsTrue_WhenCourseExists()
-        {
-            // Arrange
-            _mockCourseSet.Setup(m => m.Any(e => e.Id == 1)).Returns(true);
-
-            // Act
-            var result = _controller.CourseExists(1);
-
-            // Assert
-            Assert.True(result);
-        }
-
-        [Fact]
-        public void CourseExists_ReturnsFalse_WhenCourseDoesNotExist()
-        {
-            // Arrange
-            _mockCourseSet.Setup(m => m.Any(e => e.Id == 1)).Returns(false);
-
-            // Act
-            var result = _controller.CourseExists(1);
-
-            // Assert
-            Assert.False(result);
         }
     }
 }

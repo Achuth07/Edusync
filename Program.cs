@@ -7,13 +7,19 @@ using AspNetCoreHero.ToastNotification;
 using AspNetCoreHero.ToastNotification.Extensions;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Serilog for logging to both console and file
+// Set up Serilog configuration
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .WriteTo.File("Logs/Edusync-log-.txt", rollingInterval: RollingInterval.Day) // Logs will be created daily
+    .MinimumLevel.Information()
+    .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information)
+    .WriteTo.File("Logs/AllLogs.txt", rollingInterval: RollingInterval.Day)
+    .WriteTo.File("Logs/InformationLogs.txt", restrictedToMinimumLevel: LogEventLevel.Information, rollingInterval: RollingInterval.Day)
+    .WriteTo.File("Logs/WarningLogs.txt", restrictedToMinimumLevel: LogEventLevel.Warning, rollingInterval: RollingInterval.Day)
+    .WriteTo.File("Logs/ErrorLogs.txt", restrictedToMinimumLevel: LogEventLevel.Error, rollingInterval: RollingInterval.Day)
+    .WriteTo.File("Logs/CriticalLogs.txt", restrictedToMinimumLevel: LogEventLevel.Fatal, rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
 // Replace the default logging with Serilog

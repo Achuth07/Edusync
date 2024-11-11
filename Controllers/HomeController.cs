@@ -3,37 +3,43 @@ using Microsoft.AspNetCore.Mvc;
 using Edusync.Models;
 using Microsoft.AspNetCore.Authorization;
 
-namespace Edusync.Controllers;
-[Authorize]
-
-public class HomeController : Controller
+namespace Edusync.Controllers
 {
-    private readonly ILogger<HomeController> _logger;
-
-    public HomeController(ILogger<HomeController> logger)
+    [Authorize]
+    public class HomeController : Controller
     {
-        _logger = logger;
-    }
+        private readonly ILogger<HomeController> _logger;
 
-    [AllowAnonymous]
-    public IActionResult Index()
-    {
-        return View();
-    }
+        public HomeController(ILogger<HomeController> logger)
+        {
+            _logger = logger;
+        }
 
-    public IActionResult About()
-    {
-        return View();
-    }
+        [AllowAnonymous]
+        public IActionResult Index()
+        {
+            _logger.LogInformation("User accessed the Index page.");
+            return View();
+        }
 
-    public IActionResult Privacy()
-    {
-        return View();
-    }
+        public IActionResult About()
+        {
+            _logger.LogInformation("User accessed the About page.");
+            return View();
+        }
 
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
-    {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        public IActionResult Privacy()
+        {
+            _logger.LogInformation("User accessed the Privacy page.");
+            return View();
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            var requestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+            _logger.LogError("Error encountered with Request ID: {RequestId}", requestId);
+            return View(new ErrorViewModel { RequestId = requestId });
+        }
     }
 }

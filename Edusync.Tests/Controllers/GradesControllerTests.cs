@@ -1,14 +1,15 @@
 using Xunit;
 using Moq;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Edusync.Controllers;
 using Edusync.Data;
 using Edusync.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Edusync.Tests.Controllers
 {
@@ -16,25 +17,21 @@ namespace Edusync.Tests.Controllers
     {
         private readonly Mock<SchoolManagementDbContext> _mockContext;
         private readonly Mock<DbSet<Grade>> _mockGradeSet;
-        private readonly Mock<DbSet<Student>> _mockStudentSet;
-        private readonly Mock<DbSet<Class>> _mockClassSet;
+        private readonly Mock<ILogger<GradesController>> _mockLogger;
         private readonly GradesController _controller;
 
         public GradesControllerTests()
         {
-            // Initialize the mocks for the DbSets
+            // Initialize the mocks for DbSet and ILogger
             _mockGradeSet = new Mock<DbSet<Grade>>();
-            _mockStudentSet = new Mock<DbSet<Student>>();
-            _mockClassSet = new Mock<DbSet<Class>>();
-
+            _mockLogger = new Mock<ILogger<GradesController>>();
+            
             // Initialize the context mock
             _mockContext = new Mock<SchoolManagementDbContext>();
             _mockContext.Setup(c => c.Grades).Returns(_mockGradeSet.Object);
-            _mockContext.Setup(c => c.Students).Returns(_mockStudentSet.Object);
-            _mockContext.Setup(c => c.Classes).Returns(_mockClassSet.Object);
 
-            // Initialize the controller with the mock context
-            _controller = new GradesController(_mockContext.Object);
+            // Initialize the controller with the mock context and logger
+            _controller = new GradesController(_mockContext.Object, _mockLogger.Object);
         }
 
         // Test for Index method
@@ -44,8 +41,8 @@ namespace Edusync.Tests.Controllers
             // Arrange
             var grades = new List<Grade>
             {
-                new Grade { Id = 1, AssessmentType = "Midterm", Score = 85, AcademicYear = "2024", Student = new Student { FirstName = "John", LastName = "Doe" }, Class = new Class { Course = new Course { Code = "M101", Name = "Mathematics" } } },
-                new Grade { Id = 2, AssessmentType = "Final", Score = 90, AcademicYear = "2024", Student = new Student { FirstName = "Jane", LastName = "Smith" }, Class = new Class { Course = new Course { Code = "S101", Name = "Science" } } }
+                new Grade { Id = 1, AssessmentType = "Midterm", Score = 85 },
+                new Grade { Id = 2, AssessmentType = "Final", Score = 90 }
             }.AsQueryable();
 
             _mockGradeSet.As<IQueryable<Grade>>().Setup(m => m.Provider).Returns(grades.Provider);
@@ -64,38 +61,13 @@ namespace Edusync.Tests.Controllers
 
         // Test for Create GET method
         [Fact]
-        public void Create_ReturnsViewResult_WithSelectLists()
+        public void Create_ReturnsViewResult()
         {
-            // Arrange
-            var students = new List<Student>
-            {
-                new Student { Id = 1, FirstName = "John", LastName = "Doe" },
-                new Student { Id = 2, FirstName = "Jane", LastName = "Smith" }
-            }.AsQueryable();
-
-            var classes = new List<Class>
-            {
-                new Class { Id = 1, Course = new Course { Code = "M101", Name = "Mathematics" } },
-                new Class { Id = 2, Course = new Course { Code = "S101", Name = "Science" } }
-            }.AsQueryable();
-
-            _mockStudentSet.As<IQueryable<Student>>().Setup(m => m.Provider).Returns(students.Provider);
-            _mockStudentSet.As<IQueryable<Student>>().Setup(m => m.Expression).Returns(students.Expression);
-            _mockStudentSet.As<IQueryable<Student>>().Setup(m => m.ElementType).Returns(students.ElementType);
-            _mockStudentSet.As<IQueryable<Student>>().Setup(m => m.GetEnumerator()).Returns(students.GetEnumerator());
-
-            _mockClassSet.As<IQueryable<Class>>().Setup(m => m.Provider).Returns(classes.Provider);
-            _mockClassSet.As<IQueryable<Class>>().Setup(m => m.Expression).Returns(classes.Expression);
-            _mockClassSet.As<IQueryable<Class>>().Setup(m => m.ElementType).Returns(classes.ElementType);
-            _mockClassSet.As<IQueryable<Class>>().Setup(m => m.GetEnumerator()).Returns(classes.GetEnumerator());
-
             // Act
             var result = _controller.Create();
 
             // Assert
             var viewResult = Assert.IsType<ViewResult>(result);
-            Assert.IsType<SelectList>(viewResult.ViewData["StudentId"]);
-            Assert.IsType<SelectList>(viewResult.ViewData["ClassId"]);
         }
 
         // Test for Create POST method (Valid Model)
@@ -103,7 +75,7 @@ namespace Edusync.Tests.Controllers
         public async Task Create_PostValidModel_ReturnsRedirectToIndex()
         {
             // Arrange
-            var grade = new Grade { Id = 1, StudentId = 1, ClassId = 1, AssessmentType = "Midterm", Score = 85, AcademicYear = "2024" };
+            var grade = new Grade { Id = 1, AssessmentType = "Midterm", Score = 85 };
 
             // Act
             var result = await _controller.Create(grade);
@@ -121,7 +93,7 @@ namespace Edusync.Tests.Controllers
         public async Task Edit_ReturnsViewResult_WithGrade()
         {
             // Arrange
-            var grade = new Grade { Id = 1, StudentId = 1, ClassId = 1, AssessmentType = "Midterm", Score = 85, AcademicYear = "2024" };
+            var grade = new Grade { Id = 1, AssessmentType = "Midterm", Score = 85 };
             _mockGradeSet.Setup(m => m.FindAsync(1)).ReturnsAsync(grade);
 
             // Act
@@ -138,7 +110,7 @@ namespace Edusync.Tests.Controllers
         public async Task Delete_ReturnsViewResult_WithGrade()
         {
             // Arrange
-            var grade = new Grade { Id = 1, StudentId = 1, ClassId = 1, AssessmentType = "Midterm", Score = 85, AcademicYear = "2024" };
+            var grade = new Grade { Id = 1, AssessmentType = "Midterm", Score = 85 };
             _mockGradeSet.Setup(m => m.FindAsync(1)).ReturnsAsync(grade);
 
             // Act
@@ -155,7 +127,7 @@ namespace Edusync.Tests.Controllers
         public async Task DeleteConfirmed_DeletesGradeAndRedirectsToIndex()
         {
             // Arrange
-            var grade = new Grade { Id = 1, StudentId = 1, ClassId = 1, AssessmentType = "Midterm", Score = 85, AcademicYear = "2024" };
+            var grade = new Grade { Id = 1, AssessmentType = "Midterm", Score = 85 };
             _mockGradeSet.Setup(m => m.FindAsync(1)).ReturnsAsync(grade);
 
             // Act

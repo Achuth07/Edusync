@@ -1,6 +1,7 @@
 using Edusync.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 
 namespace Edusync.Controllers
@@ -11,7 +12,7 @@ namespace Edusync.Controllers
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly ILogger<AccountController> _logger;
 
-        public AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, ILogger<AccountController> logger) // Add logger as a dependency)
+        public AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, ILogger<AccountController> logger)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -39,11 +40,22 @@ namespace Edusync.Controllers
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User {Username} registered successfully.", model.Username);
+
                     // Add the user to the specified role
                     if (!string.IsNullOrEmpty(model.Role))
                     {
-                        await _userManager.AddToRoleAsync(user, model.Role);
-                        _logger.LogInformation("User {Username} assigned role {Role}.", model.Username, model.Role);
+                        var roleResult = await _userManager.AddToRoleAsync(user, model.Role);
+                        if (roleResult.Succeeded)
+                        {
+                            _logger.LogInformation("User {Username} assigned role {Role}.", model.Username, model.Role);
+                        }
+                        else
+                        {
+                            foreach (var error in roleResult.Errors)
+                            {
+                                _logger.LogWarning("Failed to assign role {Role} to user {Username}: {Error}", model.Role, model.Username, error.Description);
+                            }
+                        }
                     }
 
                     await _signInManager.SignInAsync(user, isPersistent: false);
@@ -56,6 +68,10 @@ namespace Edusync.Controllers
                     ModelState.AddModelError(string.Empty, error.Description);
                 }
             }
+            else
+            {
+                _logger.LogWarning("Registration form validation failed for user {Username}.", model.Username);
+            }
             return View(model);
         }
 
@@ -63,6 +79,7 @@ namespace Edusync.Controllers
         [HttpGet]
         public IActionResult Login()
         {
+            _logger.LogInformation("Navigated to Login page.");
             return View();
         }
 
@@ -84,6 +101,10 @@ namespace Edusync.Controllers
                 _logger.LogWarning("Failed login attempt for user {Username}.", model.Username);
                 ModelState.AddModelError(string.Empty, "Invalid login attempt.");
             }
+            else
+            {
+                _logger.LogWarning("Login form validation failed for user {Username}.", model.Username);
+            }
             return View(model);
         }
 
@@ -93,6 +114,7 @@ namespace Edusync.Controllers
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
+            _logger.LogInformation("User logged out successfully.");
             return RedirectToAction("Index", "Home");
         }
     }

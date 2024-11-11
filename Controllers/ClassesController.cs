@@ -9,6 +9,7 @@ using Edusync.Data;
 using Edusync.Models;
 using AspNetCoreHero.ToastNotification.Abstractions;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
 
 namespace Edusync.Controllers
 {
@@ -16,17 +17,20 @@ namespace Edusync.Controllers
     {
         private readonly SchoolManagementDbContext _context;
         private readonly INotyfService _notyfService;
+        private readonly ILogger<ClassesController> _logger;
 
-        public ClassesController(SchoolManagementDbContext context, INotyfService notyfService)
+        public ClassesController(SchoolManagementDbContext context, INotyfService notyfService, ILogger<ClassesController> logger)
         {
             _context = context;
             _notyfService = notyfService;
+            _logger = logger;
         }
 
         // GET: Classes
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Index()
         {
+            _logger.LogInformation("User {UserId} accessed the classes index page.", User?.Identity?.Name);
             var schoolManagementDbContext = _context.Classes.Include(q => q.Course).Include(q => q.Teachers);
             return View(await schoolManagementDbContext.ToListAsync());
         }
@@ -37,6 +41,7 @@ namespace Edusync.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Details action requested without ID by User {UserId}.", User?.Identity?.Name);
                 return NotFound();
             }
 
@@ -46,17 +51,19 @@ namespace Edusync.Controllers
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (@class == null)
             {
+                _logger.LogWarning("Class with ID {Id} not found for details view by User {UserId}.", id, User?.Identity?.Name);
                 return NotFound();
             }
 
+            _logger.LogInformation("User {UserId} viewed details of class ID {Id}.", User?.Identity?.Name, id);
             return View(@class);
         }
 
         // GET: Classes/Create
         [Authorize(Roles = "Admin, Teacher")]
-
         public IActionResult Create()
         {
+            _logger.LogInformation("User {UserId} accessed the create class page.", User?.Identity?.Name);
             CreateSelectLists();
             return View();
         }
@@ -72,8 +79,11 @@ namespace Edusync.Controllers
             {
                 _context.Add(@class);
                 await _context.SaveChangesAsync();
+                _logger.LogInformation("Class created successfully by User {UserId}.", User?.Identity?.Name);
                 return RedirectToAction(nameof(Index));
             }
+
+            _logger.LogWarning("Failed to create class due to invalid model state by User {UserId}.", User?.Identity?.Name);
             CreateSelectLists();
             return View(@class);
         }
@@ -84,14 +94,18 @@ namespace Edusync.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Edit action requested without ID by User {UserId}.", User?.Identity?.Name);
                 return NotFound();
             }
 
             var @class = await _context.Classes.FindAsync(id);
             if (@class == null)
             {
+                _logger.LogWarning("Class with ID {Id} not found for editing by User {UserId}.", id, User?.Identity?.Name);
                 return NotFound();
             }
+
+            _logger.LogInformation("User {UserId} accessed edit page for class ID {Id}.", User?.Identity?.Name, id);
             CreateSelectLists();
             return View(@class);
         }
@@ -105,6 +119,7 @@ namespace Edusync.Controllers
         {
             if (id != @class.Id)
             {
+                _logger.LogWarning("Class ID mismatch during edit action by User {UserId}.", User?.Identity?.Name);
                 return NotFound();
             }
 
@@ -114,20 +129,25 @@ namespace Edusync.Controllers
                 {
                     _context.Update(@class);
                     await _context.SaveChangesAsync();
+                    _logger.LogInformation("Class with ID {Id} updated by User {UserId}.", id, User?.Identity?.Name);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
                     if (!ClassExists(@class.Id))
                     {
+                        _logger.LogError("Concurrency error: Class with ID {Id} does not exist during update by User {UserId}.", id, User?.Identity?.Name);
                         return NotFound();
                     }
                     else
                     {
+                        _logger.LogCritical("Unexpected error occurred during class update for ID {Id} by User {UserId}.", id, User?.Identity?.Name);
                         throw;
                     }
                 }
                 return RedirectToAction(nameof(Index));
             }
+
+            _logger.LogWarning("Invalid model state for editing class with ID {Id} by User {UserId}.", id, User?.Identity?.Name);
             CreateSelectLists();
             return View(@class);
         }
@@ -138,6 +158,7 @@ namespace Edusync.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Delete action requested without ID by User {UserId}.", User?.Identity?.Name);
                 return NotFound();
             }
 
@@ -147,9 +168,11 @@ namespace Edusync.Controllers
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (@class == null)
             {
+                _logger.LogWarning("Class with ID {Id} not found for deletion by User {UserId}.", id, User?.Identity?.Name);
                 return NotFound();
             }
 
+            _logger.LogInformation("User {UserId} accessed delete confirmation for class ID {Id}.", User?.Identity?.Name, id);
             return View(@class);
         }
 
@@ -162,9 +185,13 @@ namespace Edusync.Controllers
             if (@class != null)
             {
                 _context.Classes.Remove(@class);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Class with ID {Id} deleted by User {UserId}.", id, User?.Identity?.Name);
             }
-
-            await _context.SaveChangesAsync();
+            else
+            {
+                _logger.LogWarning("Attempted to delete nonexistent class with ID {Id} by User {UserId}.", id, User?.Identity?.Name);
+            }
             return RedirectToAction(nameof(Index));
         }
 
@@ -177,6 +204,14 @@ namespace Edusync.Controllers
                 .Include(q => q.Enrollments)
                     .ThenInclude(q => q.Students)
                 .FirstOrDefaultAsync(m => m.Id == classId);
+
+            if (@class == null)
+            {
+                _logger.LogWarning("Class with ID {classId} not found for enrollment management by User {UserId}.", classId, User?.Identity?.Name);
+                return NotFound();
+            }
+
+            _logger.LogInformation("User {UserId} is managing enrollments for class ID {classId}.", User?.Identity?.Name, classId);
             
             var students = await _context.Students.ToListAsync();
 
@@ -210,36 +245,41 @@ namespace Edusync.Controllers
         public async Task<ActionResult> EnrollStudent(int classId, int studentId, bool shouldEnroll)
         {
             var enrollment = new Enrollment();
-            if(shouldEnroll == true)
+            if (shouldEnroll)
             {
                 enrollment.ClassId = classId;
                 enrollment.StudentsId = studentId;
                 await _context.AddAsync(enrollment);
-                _notyfService.Success($"Student Enrolled Successfully");
+                _notyfService.Success("Student enrolled successfully.");
+                _logger.LogInformation("Student ID {studentId} enrolled in class ID {classId} by User {UserId}.", studentId, classId, User?.Identity?.Name);
             }
             else
             {
                 enrollment = await _context.Enrollments.FirstOrDefaultAsync(
                     q => q.ClassId == classId && q.StudentsId == studentId);
 
-                if(enrollment != null){
+                if (enrollment != null)
+                {
                     _context.Remove(enrollment);
-                    _notyfService.Warning($"Student Unenrolled Successfully");
-                }    
+                    _notyfService.Warning("Student unenrolled successfully.");
+                    _logger.LogInformation("Student ID {studentId} unenrolled from class ID {classId} by User {UserId}.", studentId, classId, User?.Identity?.Name);
+                }
+                else
+                {
+                    _logger.LogWarning("Attempted to unenroll nonexistent enrollment for student ID {studentId} from class {classId} by User {UserId}.", studentId, classId, User?.Identity?.Name);
+                }
             }
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(ManageEnrollments), 
-            new { classId = classId});
+            return RedirectToAction(nameof(ManageEnrollments), new { classId });
         }
 
         [Authorize(Roles = "Admin, Teacher, Student")]
         public async Task<IActionResult> ViewOnly()
         {
-            var schoolManagementDbContext = _context.Classes.Include(q => q.Course).Include(q => q.Teachers);
-            return View(await schoolManagementDbContext.ToListAsync());
+            _logger.LogInformation("User {UserId} accessed the view-only classes page.", User?.Identity?.Name);
+            var classes = _context.Classes.Include(q => q.Course).Include(q => q.Teachers);
+            return View(await classes.ToListAsync());
         }
-
-
 
         private bool ClassExists(int id)
         {
@@ -248,14 +288,14 @@ namespace Edusync.Controllers
 
         private void CreateSelectLists()
         {
-            var courses = _context.Courses.Select(q => new 
+            var courses = _context.Courses.Select(q => new
             {
                 CourseName = $"{q.Code} - {q.Name} ({q.Credits} Credits)",
                 q.Id
             });
-            
+
             ViewData["CourseId"] = new SelectList(courses, "Id", "CourseName");
-            var teachers = _context.Teachers.Select(q => new 
+            var teachers = _context.Teachers.Select(q => new
             {
                 Fullname = $"{q.FirstName} {q.LastName}",
                 q.Id
