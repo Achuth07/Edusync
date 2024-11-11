@@ -35,7 +35,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
-    options.Password.RequiredLength = 6;
+    options.Password.RequiredLength = 8;
     options.Password.RequireNonAlphanumeric = false;
 })
 .AddEntityFrameworkStores<SchoolManagementDbContext>()
@@ -60,6 +60,13 @@ builder.Services.AddNotyf(config =>
     config.Position = NotyfPosition.TopRight;
 });
 
+// Enforce HTTPS Redirection
+builder.Services.AddHttpsRedirection(options =>
+{
+    options.RedirectStatusCode = StatusCodes.Status308PermanentRedirect;
+    options.HttpsPort = 7167; // Ensure this matches your HTTPS port
+});
+
 var app = builder.Build();
 
 // Seed roles after building the app
@@ -72,7 +79,9 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// Enable HTTPS Redirection Middleware
 app.UseHttpsRedirection();
+
 app.UseStaticFiles();
 
 app.UseRouting();
