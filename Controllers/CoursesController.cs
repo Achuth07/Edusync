@@ -59,6 +59,23 @@ namespace Edusync.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Name,Code,Credits")] Course course)
         {
+            // Server-side validation for required fields
+            if (string.IsNullOrWhiteSpace(course.Name) || course.Name.Length > 100)
+            {
+                ModelState.AddModelError(nameof(course.Name), "Course name is required and must be less than 100 characters.");
+                _logger.LogWarning("Invalid course name provided by User {UserId}.", User?.Identity?.Name);
+            }
+            if (!string.IsNullOrWhiteSpace(course.Code) && course.Code.Length > 10)
+            {
+                ModelState.AddModelError(nameof(course.Code), "Course code must be less than 10 characters.");
+                _logger.LogWarning("Invalid course code provided by User {UserId}.", User?.Identity?.Name);
+            }
+            if (course.Credits.HasValue && (course.Credits < 1 || course.Credits > 10))
+            {
+                ModelState.AddModelError(nameof(course.Credits), "Credits must be between 1 and 10.");
+                _logger.LogWarning("Invalid course credits provided by User {UserId}.", User?.Identity?.Name);
+            }
+
             if (ModelState.IsValid)
             {
                 _context.Add(course);
@@ -100,6 +117,23 @@ namespace Edusync.Controllers
             {
                 _logger.LogWarning("Course ID mismatch in edit action by User {UserId}.", User?.Identity?.Name);
                 return NotFound();
+            }
+
+            // Server-side validation for required fields
+            if (string.IsNullOrWhiteSpace(course.Name) || course.Name.Length > 100)
+            {
+                ModelState.AddModelError(nameof(course.Name), "Course name is required and must be less than 100 characters.");
+                _logger.LogWarning("Invalid course name provided by User {UserId} during edit.", User?.Identity?.Name);
+            }
+            if (!string.IsNullOrWhiteSpace(course.Code) && course.Code.Length > 10)
+            {
+                ModelState.AddModelError(nameof(course.Code), "Course code must be less than 10 characters.");
+                _logger.LogWarning("Invalid course code provided by User {UserId} during edit.", User?.Identity?.Name);
+            }
+            if (course.Credits.HasValue && (course.Credits < 1 || course.Credits > 10))
+            {
+                ModelState.AddModelError(nameof(course.Credits), "Credits must be between 1 and 10.");
+                _logger.LogWarning("Invalid course credits provided by User {UserId} during edit.", User?.Identity?.Name);
             }
 
             if (ModelState.IsValid)

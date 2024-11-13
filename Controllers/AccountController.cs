@@ -32,8 +32,10 @@ namespace Edusync.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterModel model)
         {
+            // Server-side validation to ensure only expected data is processed
             if (ModelState.IsValid)
             {
+                // Create a new user
                 var user = new IdentityUser { UserName = model.Username, Email = model.Email };
                 var result = await _userManager.CreateAsync(user, model.Password);
 
@@ -44,6 +46,7 @@ namespace Edusync.Controllers
                     // Add the user to the specified role
                     if (!string.IsNullOrEmpty(model.Role))
                     {
+                        // Ensure the role is valid before adding to avoid unexpected input
                         var roleResult = await _userManager.AddToRoleAsync(user, model.Role);
                         if (roleResult.Succeeded)
                         {
@@ -54,6 +57,7 @@ namespace Edusync.Controllers
                             foreach (var error in roleResult.Errors)
                             {
                                 _logger.LogWarning("Failed to assign role {Role} to user {Username}: {Error}", model.Role, model.Username, error.Description);
+                                ModelState.AddModelError(string.Empty, $"Failed to assign role: {error.Description}");
                             }
                         }
                     }
@@ -62,6 +66,7 @@ namespace Edusync.Controllers
                     return RedirectToAction("Index", "Home");
                 }
 
+                // Log any issues that occurred during registration
                 foreach (var error in result.Errors)
                 {
                     _logger.LogWarning("Failed to register user {Username}: {Error}", model.Username, error.Description);
@@ -72,6 +77,8 @@ namespace Edusync.Controllers
             {
                 _logger.LogWarning("Registration form validation failed for user {Username}.", model.Username);
             }
+
+            // Re-render the form with validation errors if any
             return View(model);
         }
 
@@ -88,8 +95,10 @@ namespace Edusync.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginModel model)
         {
+            // Server-side validation to ensure only expected data is processed
             if (ModelState.IsValid)
             {
+                // Use ASP.NET Identity's built-in methods which use parameterized queries
                 var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, isPersistent: false, lockoutOnFailure: false);
 
                 if (result.Succeeded)
@@ -105,6 +114,8 @@ namespace Edusync.Controllers
             {
                 _logger.LogWarning("Login form validation failed for user {Username}.", model.Username);
             }
+
+            // Re-render the form with validation errors if any
             return View(model);
         }
 

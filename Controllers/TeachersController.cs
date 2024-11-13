@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Edusync.Data;
 using AspNetCoreHero.ToastNotification.Abstractions;
@@ -42,8 +38,7 @@ namespace Edusync.Controllers
                 return NotFound();
             }
 
-            var teacher = await _context.Teachers
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var teacher = await _context.Teachers.FirstOrDefaultAsync(m => m.Id == id);
             if (teacher == null)
             {
                 _logger.LogWarning("Teacher with ID {Id} not found.", id);
@@ -71,10 +66,12 @@ namespace Edusync.Controllers
                 _context.Add(teacher);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Admin created a new Teacher with ID {Id}.", teacher.Id);
+                _notyfService.Success("Teacher created successfully.");
                 return RedirectToAction(nameof(Index));
             }
 
             _logger.LogWarning("Failed to create Teacher due to model state errors.");
+            _notyfService.Error("Failed to create Teacher. Please check the input values.");
             return View(teacher);
         }
 
@@ -116,6 +113,7 @@ namespace Edusync.Controllers
                     _context.Update(teacher);
                     await _context.SaveChangesAsync();
                     _logger.LogInformation("Admin updated Teacher with ID {Id}.", teacher.Id);
+                    _notyfService.Success("Teacher updated successfully.");
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -134,6 +132,7 @@ namespace Edusync.Controllers
             }
 
             _logger.LogWarning("Failed to update Teacher with ID {Id} due to model state errors.", teacher.Id);
+            _notyfService.Error("Failed to update Teacher. Please check the input values.");
             return View(teacher);
         }
 
@@ -146,8 +145,7 @@ namespace Edusync.Controllers
                 return NotFound();
             }
 
-            var teacher = await _context.Teachers
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var teacher = await _context.Teachers.FirstOrDefaultAsync(m => m.Id == id);
             if (teacher == null)
             {
                 _logger.LogWarning("Teacher with ID {Id} not found for deletion.", id);
@@ -175,25 +173,27 @@ namespace Edusync.Controllers
                 _context.Teachers.Remove(teacher);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Admin deleted Teacher with ID {Id}.", id);
+                _notyfService.Success("Teacher deleted successfully.");
 
-                // Returning success response for AJAX
+                // Return JSON success response for AJAX
                 return Json(new { success = true });
             }
             catch (DbUpdateException ex)
             {
-                if (ex.InnerException != null && ex.InnerException.Message.Contains("The DELETE statement conflicted with the REFERENCE constraint"))
+                // Check for foreign key constraint error
+                if (ex.InnerException != null && ex.InnerException.Message.Contains("REFERENCE constraint"))
                 {
-                    _notyfService.Error("Teacher has been assigned Classes in the timetable. Please remove teacher from the timetable before deleting teacher records.");
+                    _notyfService.Error("Teacher has assigned classes. Remove teacher from timetable before deletion.");
                     _logger.LogWarning("Failed to delete Teacher ID {Id} due to foreign key constraint.", id);
 
-                    // Return error response to AJAX
-                    return Json(new { success = false, message = "Teacher has been assigned Classes in the timetable. Please remove teacher from the timetable before deleting teacher records." });
+                    // Return JSON error response for AJAX
+                    return Json(new { success = false, message = "Teacher has assigned classes. Remove from timetable before deletion." });
                 }
                 else
                 {
                     _logger.LogError("Unexpected error occurred while deleting Teacher with ID {Id}.", id);
-                    // Return a generic error message
-                    return Json(new { success = false, message = "An error occurred while deleting the teacher." });
+                    // Return JSON generic error message
+                    return Json(new { success = false, message = "An unexpected error occurred while deleting the teacher." });
                 }
             }
         }

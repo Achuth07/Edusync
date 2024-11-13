@@ -48,6 +48,13 @@ namespace Edusync.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("StudentId,ClassId,Date,Status")] Attendance attendance)
         {
+            // Validate input to prevent over-posting attacks
+            if (attendance.StudentId <= 0 || attendance.ClassId <= 0 || string.IsNullOrWhiteSpace(attendance.Status))
+            {
+                _logger.LogWarning("Invalid input received in Create action by User {UserId}.", User?.Identity?.Name);
+                ModelState.AddModelError(string.Empty, "Invalid input values provided.");
+            }
+
             if (ModelState.IsValid)
             {
                 _context.Add(attendance);
@@ -94,6 +101,12 @@ namespace Edusync.Controllers
             {
                 _logger.LogWarning("Attendance ID mismatch in edit action by User {UserId}.", User?.Identity?.Name);
                 return NotFound();
+            }
+
+            if (attendance.StudentId <= 0 || attendance.ClassId <= 0 || string.IsNullOrWhiteSpace(attendance.Status))
+            {
+                _logger.LogWarning("Invalid input detected in Edit action for attendance ID {Id} by User {UserId}.", id, User?.Identity?.Name);
+                ModelState.AddModelError(string.Empty, "Invalid input values provided.");
             }
 
             if (ModelState.IsValid)

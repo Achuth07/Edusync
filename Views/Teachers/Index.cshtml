@@ -68,11 +68,14 @@
                         var btn = $(this);
                         var id = btn.data("id");
 
+                        // Set the ID in the hidden input of the form
+                        $('#teacherid').val(id);
+
                         // Send the delete request via AJAX
                         $.ajax({
                             url: '/Teachers/Delete/' + id,
                             type: 'POST',
-                            data: $('#teacherDeleteForm').serialize(),
+                            data: $('#teacherDeleteForm').serialize(), // Ensures correct ID is sent
                             success: function(response){
                                 if (response.success) {
                                     Swal.fire({
@@ -109,6 +112,4 @@
         });
     </script>
 }
-
-
 

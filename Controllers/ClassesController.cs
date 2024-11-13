@@ -31,8 +31,8 @@ namespace Edusync.Controllers
         public async Task<IActionResult> Index()
         {
             _logger.LogInformation("User {UserId} accessed the classes index page.", User?.Identity?.Name);
-            var schoolManagementDbContext = _context.Classes.Include(q => q.Course).Include(q => q.Teachers);
-            return View(await schoolManagementDbContext.ToListAsync());
+            var classes = _context.Classes.Include(q => q.Course).Include(q => q.Teachers);
+            return View(await classes.ToListAsync());
         }
 
         // GET: Classes/Details/5
@@ -49,6 +49,7 @@ namespace Edusync.Controllers
                 .Include(q => q.Course)
                 .Include(q => q.Teachers)
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (@class == null)
             {
                 _logger.LogWarning("Class with ID {Id} not found for details view by User {UserId}.", id, User?.Identity?.Name);
@@ -69,12 +70,16 @@ namespace Edusync.Controllers
         }
 
         // POST: Classes/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,TeachersId,CourseId,Time")] Class @class)
         {
+            if (@class.CourseId == null || @class.TeachersId == null)
+            {
+                _logger.LogWarning("Create action received invalid input by User {UserId}.", User?.Identity?.Name);
+                ModelState.AddModelError(string.Empty, "Invalid input values for creating a class.");
+            }
+
             if (ModelState.IsValid)
             {
                 _context.Add(@class);
@@ -111,8 +116,6 @@ namespace Edusync.Controllers
         }
 
         // POST: Classes/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,TeachersId,CourseId,Time")] Class @class)
@@ -121,6 +124,12 @@ namespace Edusync.Controllers
             {
                 _logger.LogWarning("Class ID mismatch during edit action by User {UserId}.", User?.Identity?.Name);
                 return NotFound();
+            }
+
+            if (@class.CourseId == null || @class.TeachersId == null)
+            {
+                _logger.LogWarning("Edit action received invalid input by User {UserId}.", User?.Identity?.Name);
+                ModelState.AddModelError(string.Empty, "Invalid input values for editing a class.");
             }
 
             if (ModelState.IsValid)
@@ -215,26 +224,23 @@ namespace Edusync.Controllers
             
             var students = await _context.Students.ToListAsync();
 
-            var model = new ClassEnrollmentViewModel();
-            model.Class = new ClassViewModel
+            var model = new ClassEnrollmentViewModel
             {
-                Id = @class.Id,
-                CourseName = $"{@class.Course.Code} - {@class.Course.Name}",
-                TeacherName = $"{@class.Teachers.FirstName} {@class.Teachers.LastName}",
-                Time = @class.Time.ToString()
-            };
-
-            foreach (var stu in students)
-            {
-                model.Students.Add(new StudentEnrollmentViewModel
+                Class = new ClassViewModel
+                {
+                    Id = @class.Id,
+                    CourseName = $"{@class.Course.Code} - {@class.Course.Name}",
+                    TeacherName = $"{@class.Teachers.FirstName} {@class.Teachers.LastName}",
+                    Time = @class.Time.ToString()
+                },
+                Students = students.Select(stu => new StudentEnrollmentViewModel
                 {
                     Id = stu.Id,
                     FirstName = stu.FirstName,
                     LastName = stu.LastName,
-                    IsEnrolled = (@class?.Enrollments?.Any(q => q.StudentsId == stu.Id))
-                        .GetValueOrDefault()
-                });
-            }
+                    IsEnrolled = @class.Enrollments.Any(q => q.StudentsId == stu.Id)
+                }).ToList()
+            };
 
             return View(model);
         }
@@ -244,18 +250,16 @@ namespace Edusync.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> EnrollStudent(int classId, int studentId, bool shouldEnroll)
         {
-            var enrollment = new Enrollment();
             if (shouldEnroll)
             {
-                enrollment.ClassId = classId;
-                enrollment.StudentsId = studentId;
+                var enrollment = new Enrollment { ClassId = classId, StudentsId = studentId };
                 await _context.AddAsync(enrollment);
                 _notyfService.Success("Student enrolled successfully.");
                 _logger.LogInformation("Student ID {studentId} enrolled in class ID {classId} by User {UserId}.", studentId, classId, User?.Identity?.Name);
             }
             else
             {
-                enrollment = await _context.Enrollments.FirstOrDefaultAsync(
+                var enrollment = await _context.Enrollments.FirstOrDefaultAsync(
                     q => q.ClassId == classId && q.StudentsId == studentId);
 
                 if (enrollment != null)
@@ -295,6 +299,7 @@ namespace Edusync.Controllers
             });
 
             ViewData["CourseId"] = new SelectList(courses, "Id", "CourseName");
+
             var teachers = _context.Teachers.Select(q => new
             {
                 Fullname = $"{q.FirstName} {q.LastName}",

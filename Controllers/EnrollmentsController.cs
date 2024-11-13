@@ -66,6 +66,23 @@ namespace Edusync.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,StudentsId,ClassId,Grade")] Enrollment enrollment)
         {
+            // Server-side validation
+            if (!await _context.Students.AnyAsync(s => s.Id == enrollment.StudentsId))
+            {
+                ModelState.AddModelError("StudentsId", "Selected student does not exist.");
+                _logger.LogWarning("Invalid student ID provided by User {UserId}.", User?.Identity?.Name);
+            }
+            if (!await _context.Classes.AnyAsync(c => c.Id == enrollment.ClassId))
+            {
+                ModelState.AddModelError("ClassId", "Selected class does not exist.");
+                _logger.LogWarning("Invalid class ID provided by User {UserId}.", User?.Identity?.Name);
+            }
+            if (!string.IsNullOrEmpty(enrollment.Grade) && enrollment.Grade.Length > 5)
+            {
+                ModelState.AddModelError("Grade", "Grade must be 5 characters or less.");
+                _logger.LogWarning("Invalid grade format by User {UserId}.", User?.Identity?.Name);
+            }
+
             if (ModelState.IsValid)
             {
                 _context.Add(enrollment);
@@ -111,6 +128,23 @@ namespace Edusync.Controllers
             {
                 _logger.LogWarning("Enrollment ID mismatch in edit action by User {UserId}.", User?.Identity?.Name);
                 return NotFound();
+            }
+
+            // Server-side validation
+            if (!await _context.Students.AnyAsync(s => s.Id == enrollment.StudentsId))
+            {
+                ModelState.AddModelError("StudentsId", "Selected student does not exist.");
+                _logger.LogWarning("Invalid student ID provided by User {UserId} during edit.", User?.Identity?.Name);
+            }
+            if (!await _context.Classes.AnyAsync(c => c.Id == enrollment.ClassId))
+            {
+                ModelState.AddModelError("ClassId", "Selected class does not exist.");
+                _logger.LogWarning("Invalid class ID provided by User {UserId} during edit.", User?.Identity?.Name);
+            }
+            if (!string.IsNullOrEmpty(enrollment.Grade) && enrollment.Grade.Length > 5)
+            {
+                ModelState.AddModelError("Grade", "Grade must be 5 characters or less.");
+                _logger.LogWarning("Invalid grade format by User {UserId} during edit.", User?.Identity?.Name);
             }
 
             if (ModelState.IsValid)

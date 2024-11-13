@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Edusync.Controllers
@@ -25,11 +26,10 @@ namespace Edusync.Controllers
         {
             _logger.LogInformation("User {UserId} accessed the grades index page.", User?.Identity?.Name);
 
-            // Include the related Student and Class data
             var grades = await _context.Grades
-                .Include(g => g.Student) // Eager load the Student entity
-                .Include(g => g.Class) // Eager load the Class entity
-                    .ThenInclude(c => c.Course) // Ensure the Course related to Class is loaded
+                .Include(g => g.Student)
+                .Include(g => g.Class)
+                .ThenInclude(c => c.Course)
                 .ToListAsync();
 
             return View(grades);
@@ -55,7 +55,6 @@ namespace Edusync.Controllers
 
             if (!students.Any() || !classes.Any())
             {
-                // Handle case where there's no data, redirect or show an error message
                 _logger.LogWarning("No students or classes available for creating a grade. Redirecting to index page.");
                 TempData["ErrorMessage"] = "No Students or Classes available to create a grade!";
                 return RedirectToAction("Index");
@@ -72,6 +71,18 @@ namespace Edusync.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,StudentId,ClassId,AssessmentType,Score,AcademicYear")] Grade grade)
         {
+            // Server-side validation
+            if (!await _context.Students.AnyAsync(s => s.Id == grade.StudentId))
+            {
+                ModelState.AddModelError("StudentId", "Selected student does not exist.");
+                _logger.LogWarning("Invalid student ID {StudentId} provided by User {UserId}.", grade.StudentId, User?.Identity?.Name);
+            }
+            if (!await _context.Classes.AnyAsync(c => c.Id == grade.ClassId))
+            {
+                ModelState.AddModelError("ClassId", "Selected class does not exist.");
+                _logger.LogWarning("Invalid class ID {ClassId} provided by User {UserId}.", grade.ClassId, User?.Identity?.Name);
+            }
+
             if (ModelState.IsValid)
             {
                 _context.Add(grade);
@@ -109,7 +120,6 @@ namespace Edusync.Controllers
 
             _logger.LogInformation("User {UserId} is editing grade with ID {Id}.", User?.Identity?.Name, id);
 
-            // Populate the SelectList for the dropdowns
             ViewData["ClassId"] = new SelectList(_context.Classes.Select(c => new 
             {
                 c.Id,
@@ -134,6 +144,18 @@ namespace Edusync.Controllers
             {
                 _logger.LogWarning("Grade ID mismatch in edit action by User {UserId}.", User?.Identity?.Name);
                 return NotFound();
+            }
+
+            // Server-side validation
+            if (!await _context.Students.AnyAsync(s => s.Id == grade.StudentId))
+            {
+                ModelState.AddModelError("StudentId", "Selected student does not exist.");
+                _logger.LogWarning("Invalid student ID {StudentId} provided by User {UserId} during edit.", grade.StudentId, User?.Identity?.Name);
+            }
+            if (!await _context.Classes.AnyAsync(c => c.Id == grade.ClassId))
+            {
+                ModelState.AddModelError("ClassId", "Selected class does not exist.");
+                _logger.LogWarning("Invalid class ID {ClassId} provided by User {UserId} during edit.", grade.ClassId, User?.Identity?.Name);
             }
 
             if (ModelState.IsValid)
@@ -161,8 +183,6 @@ namespace Edusync.Controllers
             }
 
             _logger.LogWarning("Invalid model state for editing grade with ID {Id} by User {UserId}.", id, User?.Identity?.Name);
-
-            // Repopulate the dropdowns in case of failure
             ViewData["ClassId"] = new SelectList(_context.Classes, "Id", "CourseName", grade.ClassId);
             ViewData["StudentId"] = new SelectList(_context.Students, "Id", "FullName", grade.StudentId);
             return View(grade);
@@ -221,9 +241,9 @@ namespace Edusync.Controllers
             _logger.LogInformation("User {UserId} accessed the grades view-only page.", User?.Identity?.Name);
 
             var grades = await _context.Grades
-                .Include(g => g.Student)   // To load student details
-                .Include(g => g.Class)     // To load class details
-                .ThenInclude(c => c.Course)  // To load course details (if needed)
+                .Include(g => g.Student)
+                .Include(g => g.Class)
+                .ThenInclude(c => c.Course)
                 .ToListAsync();
 
             return View(grades);

@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Edusync.Controllers
 {
+    [Authorize]
     public class StudentsController : Controller
     {
         private readonly SchoolManagementDbContext _context;
@@ -38,7 +39,7 @@ namespace Edusync.Controllers
             if (id == null)
             {
                 _logger.LogWarning("Attempted to access Student details with a null ID.");
-                return NotFound();
+                return BadRequest("Student ID cannot be null.");
             }
 
             var student = await _context.Students
@@ -66,15 +67,16 @@ namespace Edusync.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,FirstName,LastName,DateOfBirth")] Student student)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                _context.Add(student);
-                await _context.SaveChangesAsync();
-                _logger.LogInformation("Admin created a new Student with ID {Id}.", student.Id);
-                return RedirectToAction(nameof(Index));
+                _logger.LogWarning("Failed to create Student due to invalid model state.");
+                return View(student);
             }
-            _logger.LogWarning("Failed to create Student due to model state errors.");
-            return View(student);
+
+            _context.Add(student);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Admin created a new Student with ID {Id}.", student.Id);
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Students/Edit/5
@@ -84,7 +86,7 @@ namespace Edusync.Controllers
             if (id == null)
             {
                 _logger.LogWarning("Attempted to edit Student with a null ID.");
-                return NotFound();
+                return BadRequest("Student ID cannot be null.");
             }
 
             var student = await _context.Students.FindAsync(id);
@@ -106,35 +108,35 @@ namespace Edusync.Controllers
             if (id != student.Id)
             {
                 _logger.LogWarning("Student ID mismatch for editing. Provided ID: {ProvidedId}, Student ID: {StudentId}.", id, student.Id);
-                return NotFound();
+                return BadRequest("ID mismatch.");
             }
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                try
-                {
-                    _context.Update(student);
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation("Admin updated Student with ID {Id}.", student.Id);
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!StudentExists(student.Id))
-                    {
-                        _logger.LogWarning("Student with ID {Id} not found during update attempt.", student.Id);
-                        return NotFound();
-                    }
-                    else
-                    {
-                        _logger.LogError("Concurrency error occurred while updating Student with ID {Id}.", student.Id);
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
+                _logger.LogWarning("Failed to update Student with ID {Id} due to invalid model state.", student.Id);
+                return View(student);
             }
 
-            _logger.LogWarning("Failed to update Student with ID {Id} due to model state errors.", student.Id);
-            return View(student);
+            try
+            {
+                _context.Update(student);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Admin updated Student with ID {Id}.", student.Id);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!StudentExists(student.Id))
+                {
+                    _logger.LogWarning("Student with ID {Id} not found during update attempt.", student.Id);
+                    return NotFound();
+                }
+                else
+                {
+                    _logger.LogError("Concurrency error occurred while updating Student with ID {Id}.", student.Id);
+                    throw;
+                }
+            }
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Students/Delete/5
@@ -144,7 +146,7 @@ namespace Edusync.Controllers
             if (id == null)
             {
                 _logger.LogWarning("Attempted to delete Student with a null ID.");
-                return NotFound();
+                return BadRequest("Student ID cannot be null.");
             }
 
             var student = await _context.Students
