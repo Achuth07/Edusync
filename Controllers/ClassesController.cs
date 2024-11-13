@@ -72,7 +72,7 @@ namespace Edusync.Controllers
         // POST: Classes/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,TeachersId,CourseId,Time")] Class @class)
+        public async Task<IActionResult> Create([Bind("Id,TeachersId,CourseId,Time,Day")] Class @class)
         {
             if (@class.CourseId == null || @class.TeachersId == null)
             {
@@ -118,7 +118,7 @@ namespace Edusync.Controllers
         // POST: Classes/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,TeachersId,CourseId,Time")] Class @class)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,TeachersId,CourseId,Time,Day")] Class @class)
         {
             if (id != @class.Id)
             {

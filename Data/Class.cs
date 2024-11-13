@@ -22,7 +22,7 @@ public partial class Class
     [StringLength(10, ErrorMessage = "Day should not exceed 10 characters.")]
     [RegularExpression("^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)$", 
         ErrorMessage = "Day must be a valid day of the week (e.g., Monday, Tuesday).")]
-    public string Day { get; set; } = "Monday";
+    public string Day { get; set; } 
 
     public virtual Course? Course { get; set; }
 
