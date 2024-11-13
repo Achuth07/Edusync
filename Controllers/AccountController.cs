@@ -98,17 +98,52 @@ namespace Edusync.Controllers
             // Server-side validation to ensure only expected data is processed
             if (ModelState.IsValid)
             {
-                // Use ASP.NET Identity's built-in methods which use parameterized queries
-                var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, isPersistent: false, lockoutOnFailure: false);
+                // Check if the user exists
+                var user = await _userManager.FindByNameAsync(model.Username);
+                if (user == null)
+                {
+                    _logger.LogWarning("Login attempt failed: User {Username} not found.", model.Username);
+                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                    return View(model);
+                }
+
+                // Check if the user is locked out
+                if (await _userManager.IsLockedOutAsync(user))
+                {
+                    _logger.LogWarning("Login attempt for locked-out user {Username}.", model.Username);
+                    ModelState.AddModelError(string.Empty, "Your account is locked out. Please try again later.");
+                    return View(model);
+                }
+
+                // Attempt to sign in the user
+                var result = await _signInManager.PasswordSignInAsync(
+                    model.Username,
+                    model.Password,
+                    isPersistent: false,
+                    lockoutOnFailure: true // Enables lockout for failed attempts
+                );
 
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User {Username} logged in successfully.", model.Username);
+
+                    // Reset failed access count upon successful login
+                    await _userManager.ResetAccessFailedCountAsync(user);
+
                     return RedirectToAction("Index", "Home");
                 }
-
-                _logger.LogWarning("Failed login attempt for user {Username}.", model.Username);
-                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                else if (result.IsLockedOut)
+                {
+                    _logger.LogWarning("User {Username} is locked out after failed login attempts.", model.Username);
+                    ModelState.AddModelError(string.Empty, "Your account is locked out. Please try again later after 60 mins.");
+                }
+                else
+                {
+                    // Increment failed access count
+                    await _userManager.AccessFailedAsync(user);
+                    _logger.LogWarning("Failed login attempt for user {Username}.", model.Username);
+                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                }
             }
             else
             {
@@ -124,6 +159,8 @@ namespace Edusync.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
+            // Clear the session
+            HttpContext.Session.Clear();
             await _signInManager.SignOutAsync();
             _logger.LogInformation("User logged out successfully.");
             return RedirectToAction("Index", "Home");

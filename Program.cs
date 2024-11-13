@@ -8,6 +8,8 @@ using AspNetCoreHero.ToastNotification.Extensions;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +39,11 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     options.Password.RequireUppercase = true;
     options.Password.RequiredLength = 8;
     options.Password.RequireNonAlphanumeric = false;
+
+    // Configure lockout settings to enable rate limiting for login attempts
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(60); // Lockout for 5 minutes
+    options.Lockout.MaxFailedAccessAttempts = 5; // Lock out user after 5 failed attempts
+    options.Lockout.AllowedForNewUsers = true;
 })
 .AddEntityFrameworkStores<SchoolManagementDbContext>()
 .AddDefaultTokenProviders();
@@ -48,6 +55,33 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LogoutPath = "/Account/Logout";
     options.AccessDeniedPath = "/Account/AccessDenied"; // Optional: Create an AccessDenied view for unauthorized access
     options.SlidingExpiration = true;
+});
+
+// Add session services
+builder.Services.AddDistributedMemoryCache(); // Required for session storage
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // Session timeout
+    options.Cookie.HttpOnly = true; // Make the session cookie HTTP-only
+    options.Cookie.IsEssential = true; // Mark the session cookie as essential
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Require HTTPS for session cookies
+    options.Cookie.SameSite = SameSiteMode.Strict; // Protect against CSRF
+});
+
+// Add rate limiting
+builder.Services.AddRateLimiter(config =>
+{
+    config.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString(),
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10, // Limit to 10 requests
+                Window = TimeSpan.FromMinutes(1), // Per minute
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 5 // Queue up to 5 extra requests
+            }));
+    config.RejectionStatusCode = 429; // Too Many Requests
 });
 
 builder.Services.AddControllersWithViews();
@@ -85,6 +119,12 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+// Enable session middleware
+app.UseSession();
+
+// Add rate limiting middleware
+app.UseRateLimiter();
 
 // Add the Content Security Policy (CSP) header
 app.Use(async (context, next) =>
