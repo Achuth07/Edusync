@@ -205,7 +205,7 @@ namespace Edusync.Controllers
             // Send reset link via email
             EmailSender.Send(
                 model.Email,
-                "Reset Your Password",
+                "Edusync - Reset Your Password",
                 $"<p>You requested a password reset. Click the link below to reset your password:</p>" +
                 $"<a href='{HtmlEncoder.Default.Encode(resetLink)}'>Reset Password</a>"
             );
