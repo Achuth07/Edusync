@@ -41,7 +41,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     options.Password.RequireNonAlphanumeric = false;
 
     // Configure lockout settings to enable rate limiting for login attempts
-    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(60); // Lockout for 5 minutes
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(60); // Lockout for 60 minutes
     options.Lockout.MaxFailedAccessAttempts = 5; // Lock out user after 5 failed attempts
     options.Lockout.AllowedForNewUsers = true;
 })
@@ -98,7 +98,7 @@ builder.Services.AddNotyf(config =>
 builder.Services.AddHttpsRedirection(options =>
 {
     options.RedirectStatusCode = StatusCodes.Status308PermanentRedirect;
-    options.HttpsPort = 7167; // Ensure this matches your HTTPS port
+    options.HttpsPort = 7167; // Ensure this matches HTTPS port
 });
 
 var app = builder.Build();

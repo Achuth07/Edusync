@@ -1,9 +1,13 @@
 using Edusync.Models;
+using Edusync.Utils;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.WebUtilities;
+using System.Text;
+using System.Text.Encodings.Web;
 
 namespace Edusync.Controllers
 {
@@ -164,6 +168,120 @@ namespace Edusync.Controllers
             await _signInManager.SignOutAsync();
             _logger.LogInformation("User logged out successfully.");
             return RedirectToAction("Index", "Home");
+        }
+
+        // GET: Account/ForgotPassword
+        [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
+
+        // POST: Account/ForgotPassword
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            // Fetch the user by email
+            var user = await _userManager.FindByEmailAsync(model.Email);
+
+            if (user == null)
+            {
+                // Log warning but do not reveal that the user does not exist
+                _logger.LogWarning("Password reset requested for non-existent email {Email}.", model.Email);
+                return RedirectToAction(nameof(ForgotPasswordConfirmation));
+            }
+
+            // Generate a password reset token
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+            var resetLink = Url.Action("ResetPassword", "Account", new { email = model.Email, token = encodedToken }, Request.Scheme);
+
+            // Send reset link via email
+            EmailSender.Send(
+                model.Email,
+                "Reset Your Password",
+                $"<p>You requested a password reset. Click the link below to reset your password:</p>" +
+                $"<a href='{HtmlEncoder.Default.Encode(resetLink)}'>Reset Password</a>"
+            );
+
+            // Log that the email has been sent
+            _logger.LogInformation("Password reset link sent to {Email}.", model.Email);
+
+            return RedirectToAction(nameof(ForgotPasswordConfirmation));
+        }
+
+        // GET: Account/ForgotPasswordConfirmation
+        [HttpGet]
+        public IActionResult ForgotPasswordConfirmation()
+        {
+            return View();
+        }
+
+        // GET: Account/ResetPassword
+        [HttpGet]
+        public IActionResult ResetPassword(string email, string token)
+        {
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(token))
+            {
+                _logger.LogWarning("Invalid password reset attempt: missing email or token.");
+                return BadRequest("Invalid password reset token.");
+            }
+
+            var model = new ResetPasswordModel
+            {
+                Email = email,
+                Token = token
+            };
+
+            return View(model);
+        }
+
+        // POST: Account/ResetPassword
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                // Do not reveal that the user does not exist
+                _logger.LogWarning("Password reset attempt failed for non-existent email {Email}.", model.Email);
+                return RedirectToAction(nameof(ResetPasswordConfirmation));
+            }
+
+            var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(model.Token));
+            var result = await _userManager.ResetPasswordAsync(user, decodedToken, model.Password);
+
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("Password reset successfully for email {Email}.", model.Email);
+                return RedirectToAction(nameof(ResetPasswordConfirmation));
+            }
+
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            return View(model);
+        }
+
+        // GET: Account/ResetPasswordConfirmation
+        [HttpGet]
+        public IActionResult ResetPasswordConfirmation()
+        {
+            return View();
         }
 
         // GET: Account/ManageRoles
