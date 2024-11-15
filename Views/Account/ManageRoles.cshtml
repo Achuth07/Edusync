@@ -1,0 +1,33 @@
+@model List<Edusync.Models.UserRolesViewModel>
+
+@{
+    ViewData["Title"] = "Manage Roles";
+}
+
+<h1>Manage Roles</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Roles</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@user.Username</td>
+                <td>@user.Email</td>
+                <td>
+                    @string.Join(", ", user.AssignedRoles)
+                </td>
+                <td>
+                    <a asp-action="EditRoles" asp-route-userId="@user.UserId" class="btn btn-primary">Edit Roles</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -1,0 +1,21 @@
+@model EditUserRolesViewModel
+
+<h2>Edit Role for @Model.Username</h2>
+
+<form asp-action="UpdateUserRoles" method="post">
+    @Html.HiddenFor(model => model.UserId)
+
+    <div class="form-group">
+        <label for="roleSelect">Select Role</label>
+        <select id="roleSelect" name="SelectedRole" class="form-control">
+            <option value="">-- Select a Role --</option>
+            @foreach (var role in Model.AvailableRoles)
+            {
+                <option value="@role" selected="@(role == Model.SelectedRole ? "selected" : null)">@role</option>
+            }
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Update Role</button>
+    <a asp-action="ManageRoles" class="btn btn-secondary">Cancel</a>
+</form>

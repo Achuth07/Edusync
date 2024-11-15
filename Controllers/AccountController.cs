@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Edusync.Controllers
 {
@@ -10,12 +11,14 @@ namespace Edusync.Controllers
     {
         private readonly UserManager<IdentityUser> _userManager;
         private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ILogger<AccountController> _logger;
 
-        public AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, ILogger<AccountController> logger)
+        public AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, RoleManager<IdentityRole> roleManager, ILogger<AccountController> logger)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _roleManager = roleManager;
             _logger = logger;
         }
 
@@ -165,5 +168,105 @@ namespace Edusync.Controllers
             _logger.LogInformation("User logged out successfully.");
             return RedirectToAction("Index", "Home");
         }
+
+        // GET: Account/ManageRoles
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ManageRoles()
+        {
+            var users = _userManager.Users.ToList();
+            var model = new List<UserRolesViewModel>();
+
+            foreach (var user in users)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                model.Add(new UserRolesViewModel
+                {
+                    UserId = user.Id,
+                    Username = user.UserName,
+                    Email = user.Email,
+                    AssignedRoles = roles,
+                    AvailableRoles = _roleManager.Roles.Select(r => r.Name).Except(roles).ToList()
+                });
+            }
+
+            _logger.LogInformation("Admin accessed the Manage Roles page.");
+            return View(model);
+        }
+
+        // POST: Account/UpdateUserRoles
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateUserRoles(string userId, string selectedRole)
+        {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(selectedRole))
+            {
+                _logger.LogWarning("Invalid input for updating user role.");
+                return BadRequest("Invalid input.");
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                _logger.LogWarning("User with ID {UserId} not found.", userId);
+                return NotFound("User not found.");
+            }
+
+            // Remove all current roles
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+            if (!removeResult.Succeeded)
+            {
+                _logger.LogError("Failed to remove existing roles for user {UserId}.", userId);
+                return StatusCode(500, "Error removing existing roles.");
+            }
+
+            // Assign the selected role
+            var addResult = await _userManager.AddToRoleAsync(user, selectedRole);
+            if (!addResult.Succeeded)
+            {
+                _logger.LogError("Failed to assign role {Role} to user {UserId}.", selectedRole, userId);
+                return StatusCode(500, "Error assigning role.");
+            }
+
+            _logger.LogInformation("Role {Role} assigned to user {UserId}.", selectedRole, userId);
+            return RedirectToAction(nameof(ManageRoles));
+        }
+
+
+        // GET: Account/EditRoles
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> EditRoles(string userId)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                _logger.LogWarning("EditRoles action called without a user ID.");
+                return NotFound("User ID is required.");
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                _logger.LogWarning("User with ID {UserId} not found.", userId);
+                return NotFound("User not found.");
+            }
+
+            var userRoles = await _userManager.GetRolesAsync(user);
+            var allRoles = _roleManager.Roles.Select(r => r.Name).ToList();
+
+            var model = new EditUserRolesViewModel
+            {
+                UserId = user.Id,
+                Username = user.UserName,
+                SelectedRole = userRoles.FirstOrDefault(), // Set the first assigned role (if any)
+                AvailableRoles = allRoles
+            };
+
+            _logger.LogInformation("Admin accessed EditRoles for user {UserId}.", userId);
+            return View(model);
+        }
+
     }
+    
 }
