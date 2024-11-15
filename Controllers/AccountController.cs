@@ -46,25 +46,22 @@ namespace Edusync.Controllers
                 {
                     _logger.LogInformation("User {Username} registered successfully.", model.Username);
 
-                    // Add the user to the specified role
-                    if (!string.IsNullOrEmpty(model.Role))
+                    // Automatically assign the "Student" role to new users
+                    var roleResult = await _userManager.AddToRoleAsync(user, "Student");
+                    if (roleResult.Succeeded)
                     {
-                        // Ensure the role is valid before adding to avoid unexpected input
-                        var roleResult = await _userManager.AddToRoleAsync(user, model.Role);
-                        if (roleResult.Succeeded)
+                        _logger.LogInformation("User {Username} assigned the default role 'Student'.", model.Username);
+                    }
+                    else
+                    {
+                        foreach (var error in roleResult.Errors)
                         {
-                            _logger.LogInformation("User {Username} assigned role {Role}.", model.Username, model.Role);
-                        }
-                        else
-                        {
-                            foreach (var error in roleResult.Errors)
-                            {
-                                _logger.LogWarning("Failed to assign role {Role} to user {Username}: {Error}", model.Role, model.Username, error.Description);
-                                ModelState.AddModelError(string.Empty, $"Failed to assign role: {error.Description}");
-                            }
+                            _logger.LogWarning("Failed to assign default role 'Student' to user {Username}: {Error}", model.Username, error.Description);
+                            ModelState.AddModelError(string.Empty, $"Failed to assign role: {error.Description}");
                         }
                     }
 
+                    // Log the user in after successful registration
                     await _signInManager.SignInAsync(user, isPersistent: false);
                     return RedirectToAction("Index", "Home");
                 }

@@ -1,5 +1,12 @@
-﻿@{
+﻿@using Microsoft.AspNetCore.Identity
+@inject UserManager<IdentityUser> UserManager
+@inject SignInManager<IdentityUser> SignInManager
+
+@{
     ViewData["Title"] = "Home Page";
+
+    var user = await UserManager.GetUserAsync(User);
+    var userRoles = user != null ? await UserManager.GetRolesAsync(user) : new List<string>();
 }
 
 <div class="container py-5">
@@ -19,46 +26,56 @@
         </div>
     </div>
 
-
     <!-- Functionalities Section -->
     <div class="row text-center my-4">
-        <!-- Admin Section -->
-        <div class="col-md-4">
-            <div class="p-4 border bg-light rounded-3">
-                <h3 class="mb-4 fw-bold">Admin</h3>
-                <ul class="list-unstyled">
-                    <li><a href="@Url.Action("Index", "Courses")" class="btn btn-outline-dark btn-block my-2">Manage Courses</a></li>
-                    <li><a href="@Url.Action("Index", "Teachers")" class="btn btn-outline-dark btn-block my-2">Manage Teachers</a></li>
-                    <li><a href="@Url.Action("Index", "Students")" class="btn btn-outline-dark btn-block my-2">Manage Students</a></li>
-                    <li><a href="@Url.Action("Index", "Classes")" class="btn btn-outline-dark btn-block my-2">Manage Timetable</a></li>
-                </ul>
-            </div>
-        </div>
 
-        <!-- Students Section -->
-        <div class="col-md-4">
-            <div class="p-4 border bg-light rounded-3">
-                <h3 class="mb-4 fw-bold">Students</h3>
-                <ul class="list-unstyled">
-                    <li><a href="@Url.Action("ViewOnly", "Grades")" class="btn btn-outline-dark btn-block my-2">View Grades</a></li>
-                    <li><a href="@Url.Action("ViewOnly", "Attendances")" class="btn btn-outline-dark btn-block my-2">View Attendance</a></li>
-                    <li><a href="@Url.Action("ViewOnly", "Classes")" class="btn btn-outline-dark btn-block my-2">View Timetable</a></li>
-                    <li><a href="@Url.Action("ViewOnly", "Students")" class="btn btn-outline-dark btn-block my-2">View Academic Progress</a></li>
-                </ul>
+        @if (userRoles.Contains("Admin"))
+        {
+            <!-- Admin Section -->
+            <div class="col-md-4">
+                <div class="p-4 border bg-light rounded-3">
+                    <h3 class="mb-4 fw-bold">Admin</h3>
+                    <ul class="list-unstyled">
+                        <li><a href="@Url.Action("Index", "Courses")" class="btn btn-outline-dark btn-block my-2">Manage Courses</a></li>
+                        <li><a href="@Url.Action("Index", "Teachers")" class="btn btn-outline-dark btn-block my-2">Manage Teachers</a></li>
+                        <li><a href="@Url.Action("Index", "Students")" class="btn btn-outline-dark btn-block my-2">Manage Students</a></li>
+                        <li><a href="@Url.Action("Index", "Classes")" class="btn btn-outline-dark btn-block my-2">Manage Timetable</a></li>
+                        <li><a href="@Url.Action("ManageRoles", "Account")" class="btn btn-outline-dark btn-block my-2">Manage Roles</a></li>
+                    </ul>
+                </div>
             </div>
-        </div>
+        }
 
-        <!-- Teachers Section -->
-        <div class="col-md-4">
-            <div class="p-4 border bg-light rounded-3">
-                <h3 class="mb-4 fw-bold">Teachers</h3>
-                <ul class="list-unstyled">
-                    <li><a href="@Url.Action("Index", "Grades")" class="btn btn-outline-dark btn-block my-2">Manage Grades</a></li>
-                    <li><a href="@Url.Action("ViewOnly", "Classes")" class="btn btn-outline-dark btn-block my-2">View Timetable</a></li>
-                    <li><a href="@Url.Action("Index", "Attendances")" class="btn btn-outline-dark btn-block my-2">Manage Attendances</a></li>
-                    <li><a href="@Url.Action("ViewOnly", "Students")" class="btn btn-outline-dark btn-block my-2">View Academic Progress</a></li>
-                </ul>
+        @if (userRoles.Contains("Student"))
+        {
+            <!-- Students Section -->
+            <div class="col-md-4">
+                <div class="p-4 border bg-light rounded-3">
+                    <h3 class="mb-4 fw-bold">Students</h3>
+                    <ul class="list-unstyled">
+                        <li><a href="@Url.Action("ViewOnly", "Grades")" class="btn btn-outline-dark btn-block my-2">View Grades</a></li>
+                        <li><a href="@Url.Action("ViewOnly", "Attendances")" class="btn btn-outline-dark btn-block my-2">View Attendance</a></li>
+                        <li><a href="@Url.Action("ViewOnly", "Classes")" class="btn btn-outline-dark btn-block my-2">View Timetable</a></li>
+                        <li><a href="@Url.Action("ViewOnly", "Students")" class="btn btn-outline-dark btn-block my-2">View Academic Progress</a></li>
+                    </ul>
+                </div>
             </div>
-        </div>
+        }
+
+        @if (userRoles.Contains("Teacher"))
+        {
+            <!-- Teachers Section -->
+            <div class="col-md-4">
+                <div class="p-4 border bg-light rounded-3">
+                    <h3 class="mb-4 fw-bold">Teachers</h3>
+                    <ul class="list-unstyled">
+                        <li><a href="@Url.Action("Index", "Grades")" class="btn btn-outline-dark btn-block my-2">Manage Grades</a></li>
+                        <li><a href="@Url.Action("ViewOnly", "Classes")" class="btn btn-outline-dark btn-block my-2">View Timetable</a></li>
+                        <li><a href="@Url.Action("Index", "Attendances")" class="btn btn-outline-dark btn-block my-2">Manage Attendances</a></li>
+                        <li><a href="@Url.Action("ViewOnly", "Students")" class="btn btn-outline-dark btn-block my-2">View Academic Progress</a></li>
+                    </ul>
+                </div>
+            </div>
+        }
     </div>
 </div>

@@ -20,9 +20,5 @@ namespace Edusync.Models
         [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters long.")]
         public string Password { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Role selection is required.")]
-        [Display(Name = "Role")]
-        [RegularExpression(@"^(Admin|Teacher|Student)$", ErrorMessage = "Invalid role selected.")]
-        public string Role { get; set; } = string.Empty; // e.g., "Admin", "Teacher", "Student"
     }
 }

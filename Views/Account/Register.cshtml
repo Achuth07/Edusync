@@ -1,37 +1,31 @@
-@model Edusync.Models.RegisterModel
+@model RegisterModel
 
 <h2>Register</h2>
-<form asp-action="Register" method="post">
-    <div asp-validation-summary="All"></div>
 
+<form asp-action="Register" method="post">
     <div class="form-group">
         <label asp-for="Username"></label>
         <input asp-for="Username" class="form-control" />
         <span asp-validation-for="Username" class="text-danger"></span>
     </div>
-
     <div class="form-group">
         <label asp-for="Email"></label>
         <input asp-for="Email" class="form-control" />
         <span asp-validation-for="Email" class="text-danger"></span>
     </div>
-
     <div class="form-group">
         <label asp-for="Password"></label>
-        <input asp-for="Password" type="password" class="form-control" />
+        <input asp-for="Password" class="form-control" />
         <span asp-validation-for="Password" class="text-danger"></span>
     </div>
 
-    <div class="form-group">
-        <label asp-for="Role"></label>
-        <select asp-for="Role" class="form-control">
-            <option value="">Select Role</option>
-            <option value="Admin">Admin</option>
-            <option value="Teacher">Teacher</option>
-            <option value="Student">Student</option>
-        </select>
-        <span asp-validation-for="Role" class="text-danger"></span>
+    <button type="submit" class="btn btn-primary">Register</button>
+    <div class="alert alert-info mt-3" role="alert">
+        If you are registering as a teacher, please complete your registration and contact the administrator to have your account upgraded to the teacher role. Role changes are subject to verification and approval.
     </div>
 
-    <button type="submit" class="btn btn-primary">Register</button>
 </form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
