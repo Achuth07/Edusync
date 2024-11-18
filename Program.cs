@@ -189,7 +189,7 @@ async Task SeedAdminAccount(IServiceProvider serviceProvider)
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
 
     string adminEmail = "admin@example.com";
-    string adminPassword = "Edusync@123"; // Replace with a strong password for production
+    string adminPassword = "Edusync123!"; // Replace with a strong password for production
     string adminRole = "Admin";
 
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
