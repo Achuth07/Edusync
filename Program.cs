@@ -48,12 +48,21 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<SchoolManagementDbContext>()
 .AddDefaultTokenProviders();
 
+// Configure Password Hasher Options globally
+builder.Services.Configure<PasswordHasherOptions>(options =>
+{
+    // Set iteration count for hashing (higher value increases computational cost)
+    options.IterationCount = 100000; // Default is 10,000;
+    // Set compatibility mode for hashing
+    options.CompatibilityMode = PasswordHasherCompatibilityMode.IdentityV3;
+});
+
 // Configure Cookie-based Authentication
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";
     options.LogoutPath = "/Account/Logout";
-    options.AccessDeniedPath = "/Account/AccessDenied"; // Optional: Create an AccessDenied view for unauthorized access
+    options.AccessDeniedPath = "/Account/AccessDenied"; 
     options.SlidingExpiration = true;
 });
 
@@ -103,8 +112,9 @@ builder.Services.AddHttpsRedirection(options =>
 
 var app = builder.Build();
 
-// Seed roles after building the app
+// Seed roles and admin user after building the app
 await SeedRoles(app.Services);
+await SeedAdminAccount(app.Services);
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -167,5 +177,50 @@ async Task SeedRoles(IServiceProvider serviceProvider)
         {
             await roleManager.CreateAsync(new IdentityRole(roleName));
         }
+    }
+}
+
+/// <summary>
+/// Seeds an admin account in the application. (Only for testing purposes, remove for production)
+/// </summary>
+async Task SeedAdminAccount(IServiceProvider serviceProvider)
+{
+    using var scope = serviceProvider.CreateScope();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+
+    string adminEmail = "admin@example.com";
+    string adminPassword = "Edusync@123"; // Replace with a strong password for production
+    string adminRole = "Admin";
+
+    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+
+    if (adminUser == null)
+    {
+        var newAdmin = new IdentityUser
+        {
+            UserName = "Admin",
+            Email = adminEmail,
+            EmailConfirmed = true // Mark email as confirmed for testing
+        };
+
+        var result = await userManager.CreateAsync(newAdmin, adminPassword);
+
+        if (result.Succeeded)
+        {
+            await userManager.AddToRoleAsync(newAdmin, adminRole);
+            Console.WriteLine($"Admin account ({adminEmail}) created successfully.");
+        }
+        else
+        {
+            Console.WriteLine($"Failed to create admin account ({adminEmail}):");
+            foreach (var error in result.Errors)
+            {
+                Console.WriteLine($"- {error.Description}");
+            }
+        }
+    }
+    else
+    {
+        Console.WriteLine($"Admin account ({adminEmail}) already exists.");
     }
 }
