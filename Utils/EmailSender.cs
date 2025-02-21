@@ -9,7 +9,7 @@ namespace Edusync.Utils
         private static readonly string smtpHost = "smtp.sendgrid.net";
         private static readonly int smtpPort = 587; // Recommended port for TLS with SendGrid
         private static readonly string fromEmail = "achuthchandra07@gmail.com"; // Replace with your verified sender email
-        private static readonly string emailPassword = "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"; // Keeping secrets exposed, since its Sendgrid trial account, Move to Cloud Secrets manager after trial ends.
+        private static readonly string emailPassword = ""; // Add sendgrid secrets here
 
         public static void Send(string to, string subject, string messageBody)
         {
